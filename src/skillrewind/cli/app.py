@@ -179,14 +179,14 @@ def _cmd_closure(args: argparse.Namespace) -> int:
         from .. import graph as legacy_graph
 
         g = legacy_graph.RecordedLineageGraph(legacy_graph.load_edges(args.edges))
-        closure = g.descendants(args.root, include_roots=not args.exclude_roots)
-        induced = g.induced_edges(closure)
+        legacy_closure = g.descendants(args.root, include_roots=not args.exclude_roots)
+        legacy_induced = g.induced_edges(legacy_closure)
         _write_json(
             {
                 "mode": "recorded-only",
                 "roots": sorted(set(args.root)),
-                "artifacts": list(closure),
-                "edges": [e.as_dict() for e in induced],
+                "artifacts": list(legacy_closure),
+                "edges": [e.as_dict() for e in legacy_induced],
                 "limitations": [
                     "This result traverses only supplied recorded edges.",
                     "It does not infer hidden influence or test causal effects.",

@@ -10,7 +10,7 @@ from ..config import SkillRewindConfig
 from ..domain.enums import EvidenceClass, RelationType, ReplayVerdict
 from ..domain.models import InfluenceEdge, ReplayRecord
 from ..workspace import Workspace, timestamp
-from .base import get_runner
+from .base import RunnerOutput, get_runner
 from .comparator import compare_target_behavior
 from .fidelity import build_fidelity_report
 from .interventions import build_present_spec, build_withheld_spec
@@ -40,8 +40,8 @@ def run_paired_replay(
     runner = get_runner(runner_name)
 
     outcomes: list[bool] = []
-    last_present = None
-    last_withheld = None
+    last_present: Optional[RunnerOutput] = None
+    last_withheld: Optional[RunnerOutput] = None
     error: Optional[str] = None
 
     for i in range(max(1, repetitions)):
@@ -87,6 +87,7 @@ def run_paired_replay(
         _persist_edge(workspace, candidate_ancestor_id, target_derivation_id, derivation, EvidenceClass.UNRESOLVED, None, record, now)
         return ReplayOutcome(replay_id, ReplayVerdict.UNRESOLVED_RUNNER_FAILURE, 0.0, (), record)
 
+    assert last_present is not None and last_withheld is not None  # loop always runs >=1 iteration
     fidelity = build_fidelity_report(last_present.fidelity_components, last_withheld.fidelity_components)
     comparison = compare_target_behavior(last_present, last_withheld)
     stats = paired_binary_bootstrap(outcomes, seed=derivation.seed or 0)

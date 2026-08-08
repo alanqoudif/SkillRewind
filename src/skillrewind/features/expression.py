@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from typing import AbstractSet
 
 _TOKEN_RE = re.compile(r"[^\W\d_]+|\d+", re.UNICODE)
 
@@ -30,7 +31,7 @@ def _ngrams(sequence: list[str], n: int) -> set[tuple[str, ...]]:
     return {tuple(sequence[i : i + n]) for i in range(len(sequence) - n + 1)}
 
 
-def jaccard(a: set, b: set) -> float:
+def jaccard(a: AbstractSet, b: AbstractSet) -> float:
     if not a and not b:
         return 0.0
     union = a | b

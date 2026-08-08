@@ -181,7 +181,7 @@ def run_revocation(
         reached_verifying = False
         for artifact_id in list(event.quarantined):
             try:
-                result = rebuild_artifact(workspace, artifact_id, revocation_event_id=event.event_id)
+                rebuild_result = rebuild_artifact(workspace, artifact_id, revocation_event_id=event.event_id)
             except (NotFoundError, KeyError) as exc:
                 event.unresolved.append({"target": artifact_id, "reason": f"rebuild-unavailable: {exc}"})
                 continue
@@ -189,11 +189,13 @@ def run_revocation(
             if not reached_verifying:
                 event = transition(workspace.revocations, event, RevocationState.VERIFYING)
                 reached_verifying = True
-            report = run_suite(workspace, result.new_artifact.artifact_id, suite, fixture_output=result.fixture_output)
+            report = run_suite(
+                workspace, rebuild_result.new_artifact.artifact_id, suite, fixture_output=rebuild_result.fixture_output
+            )
             if report.status == "pass":
-                publish_successor(workspace, artifact_id, result.new_artifact.artifact_id)
+                publish_successor(workspace, artifact_id, rebuild_result.new_artifact.artifact_id)
                 event.rebuilt.append(
-                    {"original": artifact_id, "successor": result.new_artifact.artifact_id, "verification": report.to_dict()}
+                    {"original": artifact_id, "successor": rebuild_result.new_artifact.artifact_id, "verification": report.to_dict()}
                 )
             else:
                 event.unresolved.append(

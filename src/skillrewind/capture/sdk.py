@@ -203,6 +203,6 @@ class _DerivationContext:
     def __enter__(self) -> DerivationRun:
         return self._run
 
-    def __exit__(self, exc_type, exc, tb) -> bool:
+    def __exit__(self, exc_type, exc, tb) -> None:
         self._run._finalize(failed=exc_type is not None, error=str(exc) if exc else None)
-        return False  # never swallow exceptions
+        return None  # never swallow exceptions

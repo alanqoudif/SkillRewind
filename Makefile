@@ -39,10 +39,10 @@ schemas:
 	$(PY) -c "import json,glob; [json.load(open(f)) for f in glob.glob('spec/**/*.json', recursive=True)]; print('All spec JSON files parse as valid JSON.')"
 
 bench-smoke:
-	$(PY) -m skillrewind.rewindbench.cli generate --preset smoke --seed 42 --output .runs/cases
-	$(PY) -m skillrewind.rewindbench.cli run --method static-multitrace --cases .runs/cases --output .runs/run-smoke
-	$(PY) -m skillrewind.rewindbench.cli score --run .runs/run-smoke
-	$(PY) -m skillrewind.rewindbench.cli report --run .runs/run-smoke --format markdown
+	$(PY) -m skillrewind.bench.cli generate --preset smoke --seed 42 --output .runs/cases
+	$(PY) -m skillrewind.bench.cli run --method static-multitrace --cases .runs/cases --output .runs/run-smoke
+	$(PY) -m skillrewind.bench.cli score --run .runs/run-smoke
+	$(PY) -m skillrewind.bench.cli report --run .runs/run-smoke --format markdown
 
 demo:
 	$(PY) examples/poisoned-descendant/run_demo.py
