@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import uuid
 
-from .graph import RecordedLineageGraph
-from . import __version__
+from ..graph import RecordedLineageGraph
+from .. import __version__
 
 
 def _timestamp() -> str:

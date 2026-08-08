@@ -8,8 +8,8 @@ from pathlib import Path
 import sys
 from typing import Sequence
 
-from .attestation import recorded_attestation
-from .graph import LineageFormatError, RecordedLineageGraph, load_edges
+from ..attestation import recorded_attestation
+from ..graph import LineageFormatError, RecordedLineageGraph, load_edges
 
 
 def _write_json(value: object, output: str | None) -> None:
