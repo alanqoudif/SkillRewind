@@ -1,0 +1,167 @@
+Metadata-Version: 2.4
+Name: skillrewind
+Version: 0.1.0
+Summary: Recorded-lineage baseline and research schemas for revoking persistent AI-agent skills.
+Author: Faisal Ali Said Al-Anqoudi
+License: Apache-2.0
+Keywords: llm-agents,agent-skills,provenance,revocation,ai-security
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Security
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# SkillRewind
+
+**Recover hidden influence lineage and revoke persistent behavior in self-evolving AI agents.**
+
+> AI agents can learn reusable skills. SkillRewind investigates how they can reliably retract what those skills caused.
+
+[![Status: Research Proposal](https://img.shields.io/badge/status-research%20proposal-1f4e79)](#project-status)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-0f766e)](LICENSE)
+
+## Project status
+
+This repository is a **research starter, version 0.1**. It contains a publication-oriented proposal, a formal RFC, machine-readable schemas, the RewindBench design, and a tested recorded-lineage baseline. It does **not** claim experimental results yet.
+
+The current paper title is:
+
+> **SkillRewind: Recovering Hidden Influence Lineage for Verified Revocation in Self-Evolving LLM Agents**
+
+## The problem
+
+Self-evolving agents can distill trajectories, memories, tool interactions, and documents into persistent skills. Deleting a poisoned or obsolete source does not necessarily remove its effect: later skills may preserve the behavior after paraphrasing instructions, rewriting code, changing tools, or passing through multiple generations.
+
+Recorded provenance helps only when the lineage graph is complete. The research question behind SkillRewind is:
+
+> Can an agent recover missing influence relationships through multi-trace evidence and counterfactual re-derivation, then selectively quarantine or rebuild affected artifacts without destroying clean utility?
+
+## Proposed revocation contract
+
+SkillRewind separates four evidence levels:
+
+1. **Recorded** — exact input and derivation edges captured at creation time.
+2. **Inferred** — candidate hidden edges supported by expression, implementation, operational, behavioral, graph, and temporal traces.
+3. **Replay-confirmed** — uncertain relationships tested by paired counterfactual re-derivation.
+4. **Unresolved** — artifacts outside the declared replay or validation boundary.
+
+The proposed pipeline is:
+
+```text
+immutable capture
+    -> hard closure over recorded lineage
+    -> multi-trace hidden-lineage recovery
+    -> budgeted counterfactual re-derivation
+    -> quarantine
+    -> clean-room rebuild
+    -> safety and utility verification
+    -> bounded revocation attestation
+```
+
+## What is new in the working hypothesis
+
+The project does not claim that provenance, cascade repair, taint tracking, or agent unlearning are new individually. The intended contribution is their combination under a stricter setting:
+
+- persistent self-evolved skill artifacts;
+- missing or unrecorded influence edges;
+- active interventional recovery instead of similarity alone;
+- selective cascade rebuilding; and
+- an evidence-typed attestation that exposes residual uncertainty.
+
+The novelty statement is provisional and must be re-audited before submission.
+
+## Repository map
+
+```text
+.
+├── paper/                         # LaTeX research proposal and references
+├── rfc/0001-hidden-lineage-revocation.md
+├── spec/                          # JSON Schemas and examples
+├── benchmark/                     # RewindBench design and example case
+├── src/skillrewind/               # Recorded-lineage baseline implementation
+├── tests/                         # Standard-library unit tests
+├── examples/                      # Small graph used by the CLI
+├── pyproject.toml
+├── CITATION.cff
+└── LICENSE
+```
+
+## Run the current baseline
+
+The included code implements only the deterministic **recorded-lineage closure** baseline. Hidden-lineage inference and replay are research milestones, not silently mocked features.
+
+```bash
+python -m pip install -e .
+skillrewind closure \
+  --edges examples/recorded_edges.jsonl \
+  --root skill://fast-http@sha256:bad001
+```
+
+Generate a recorded-evidence attestation:
+
+```bash
+skillrewind attest \
+  --edges examples/recorded_edges.jsonl \
+  --root skill://fast-http@sha256:bad001 \
+  --output recorded-attestation.json
+```
+
+Run tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## RewindBench
+
+The benchmark will plant complete oracle lineage and then remove edges under controlled missingness. Planned scenario families include:
+
+- direct inheritance;
+- semantic laundering;
+- implementation mutation;
+- procedural inheritance;
+- multi-hop contamination;
+- memory-to-skill promotion;
+- cross-model distillation; and
+- compositional influence.
+
+All security effects must be inert canaries or mocked side effects in isolated sandboxes.
+
+## Research milestones
+
+| Phase | Deliverable |
+|---|---|
+| 0 | Proposal, RFC, schemas, recorded-closure baseline |
+| 1 | RewindBench-Core generator and provenance-loss operators |
+| 2 | Multi-trace candidate recovery and calibrated strict negatives |
+| 3 | Counterfactual re-derivation and active replay selection |
+| 4 | Quarantine, clean-room rebuilding, validation, and attestation |
+| 5 | Public-system adapters, experiments, ablations, and paper |
+
+## Evidence discipline
+
+The project distinguishes targets from findings. Any future number in the paper must map to a frozen experiment, metric, raw artifact, and analysis script. Hosted-model results must be archived separately from fully reproducible local runs.
+
+## Closest related work
+
+The proposal positions itself relative to MemoRepair, MemLineage, NeuroTaint, SkillTrace, SkillWiki, Agentic Unlearning, SkillJack, and PoisonedEvolution. Full references are in [`paper/references.bib`](paper/references.bib).
+
+A key motivating result from MemoRepair is that its cascade-repair guarantee depends on complete influence provenance; its reported experiment shows substantial leakage after dropping only a small fraction of influence edges. SkillRewind focuses on recovering and testing those missing relationships before repair.
+
+## Safety
+
+Do not use live credentials, destructive commands, real exfiltration targets, or production accounts in benchmark payloads. Use canary strings, mocked flags, temporary files, and sandbox-only endpoints. Newly discovered vulnerabilities should follow coordinated disclosure.
+
+## Citation
+
+A preliminary citation record is provided in [`CITATION.cff`](CITATION.cff). Update it with a DOI or archival identifier only after publication.
+
+## License
+
+Apache License 2.0. See [`LICENSE`](LICENSE).

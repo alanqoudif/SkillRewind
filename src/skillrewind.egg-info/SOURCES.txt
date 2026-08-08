@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+src/skillrewind/__init__.py
+src/skillrewind/__main__.py
+src/skillrewind/attestation.py
+src/skillrewind/cli.py
+src/skillrewind/graph.py
+src/skillrewind/py.typed
+src/skillrewind.egg-info/PKG-INFO
+src/skillrewind.egg-info/SOURCES.txt
+src/skillrewind.egg-info/dependency_links.txt
+src/skillrewind.egg-info/entry_points.txt
+src/skillrewind.egg-info/top_level.txt
+tests/test_graph.py

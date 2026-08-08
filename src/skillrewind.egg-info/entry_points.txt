@@ -1,0 +1,2 @@
+[console_scripts]
+skillrewind = skillrewind.cli:main
