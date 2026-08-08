@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+build/
+dist/
+
+# SkillRewind workspaces and generated benchmark runs
+.skillrewind/
+.skillrewind-demo/
+.runs/
+*.db
+*.db-wal
+*.db-shm
+
+# Private keys -- never commit
+*.key
+keys/
+
+# Paper build output
+paper/build/
+paper/rendered/
+paper/rendered-final/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skillrewind"
-version = "0.1.0"
-description = "Recorded-lineage baseline and research schemas for revoking persistent AI-agent skills."
+version = "0.2.0"
+description = "Recovering hidden influence lineage for verified revocation in self-evolving LLM agents (research preview)."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["llm-agents", "agent-skills", "provenance", "revocation", "ai-security"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
