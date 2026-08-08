@@ -30,7 +30,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from ..canonical.json import canonical_bytes
 from ..domain.enums import ArtifactKind, EvidenceClass, RelationType
 from ..domain.models import Derivation, InfluenceEdge
 from ..workspace import Workspace, timestamp

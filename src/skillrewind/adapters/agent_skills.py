@@ -14,18 +14,16 @@ read.
 from __future__ import annotations
 
 import hashlib
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 
-from ..cas.local import LocalCAS
-from ..domain.errors import CASPathTraversalError, LineageFormatError
-from ..workspace import Workspace, timestamp
 from ..domain.enums import ArtifactKind
+from ..domain.errors import CASPathTraversalError, LineageFormatError
 from ..domain.models import Artifact
+from ..workspace import Workspace
 
 DEFAULT_MAX_FILE_BYTES = 5 * 1024 * 1024
 DEFAULT_MAX_DEPTH = 12

@@ -10,12 +10,10 @@ from __future__ import annotations
 
 import sqlite3
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 from .audit.log import AuditLog
-from .canonical.json import sha256_hex
 from .cas.local import LocalCAS
 from .config import SkillRewindConfig, load_config
 from .domain.enums import ArtifactKind, LifecycleStatus

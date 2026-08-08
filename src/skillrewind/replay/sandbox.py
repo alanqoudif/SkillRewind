@@ -23,9 +23,8 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from ..domain.enums import InterventionKind
 from .base import ReplaySpec, RunnerOutput, register_runner
 
 try:

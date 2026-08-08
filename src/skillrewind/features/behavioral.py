@@ -13,8 +13,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from .expression import jaccard
-
 
 def _probe_vector(source: dict[str, Any]) -> dict[str, Any]:
     """Extract a flat probe-name -> value vector from a stored validation result."""

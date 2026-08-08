@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional
 
-from .base import DerivationRunner, ReplaySpec, RunnerOutput
-from .base import register_runner
+from .base import ReplaySpec, RunnerOutput, register_runner
 
 FixtureFn = Callable[[dict[str, Any], frozenset[str], Optional[int]], dict[str, Any]]
 

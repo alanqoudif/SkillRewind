@@ -13,9 +13,9 @@ from dataclasses import asdict
 from typing import Any
 
 from .. import __version__
-from ..canonical.json import canonical_bytes, sha256_hex
+from ..canonical.json import sha256_hex
 from ..domain.models import RevocationEvent
-from ..workspace import Workspace, timestamp
+from ..workspace import Workspace
 
 ATTESTATION_SCHEMA_VERSION = "0.2"
 

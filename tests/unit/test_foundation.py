@@ -14,7 +14,6 @@ from skillrewind.domain.enums import ArtifactKind
 from skillrewind.domain.errors import AuditChainError, CASIntegrityError, InvalidArtifactIdError
 from skillrewind.domain.ids import build_artifact_id, is_valid_artifact_id, parse_artifact_id
 
-
 # --- canonical JSON -----------------------------------------------------
 
 

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
-from ..graph import RecordedLineageGraph
 from .. import __version__
+from ..graph import RecordedLineageGraph
 
 
 def _timestamp() -> str:

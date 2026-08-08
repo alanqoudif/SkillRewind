@@ -5,8 +5,8 @@ import pytest
 from skillrewind.domain.enums import RevocationPolicy, RevocationState, Severity
 from skillrewind.domain.errors import InvalidStateTransitionError
 from skillrewind.domain.models import RevocationEvent
-from skillrewind.persistence.repositories import RevocationRepository
 from skillrewind.persistence.database import connect_memory
+from skillrewind.persistence.repositories import RevocationRepository
 from skillrewind.revocation.state_machine import transition
 
 

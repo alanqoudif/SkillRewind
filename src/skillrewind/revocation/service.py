@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from ..config import SkillRewindConfig
-from ..domain.enums import EvidenceClass, LifecycleStatus, RevocationPolicy, RevocationState, Severity
+from ..domain.enums import RevocationPolicy, RevocationState, Severity
 from ..domain.errors import NotFoundError
 from ..domain.models import RevocationEvent
 from ..lineage.candidates import recover_candidates

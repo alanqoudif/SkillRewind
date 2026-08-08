@@ -10,10 +10,9 @@ considered at all.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from ..domain.models import Artifact, Derivation
 from ..workspace import Workspace
 
 
@@ -42,7 +41,13 @@ def build_neighborhood(
     target = workspace.artifacts.get(target_artifact_id)
     target_derivation = workspace.derivations.find_by_target(target_artifact_id)
 
-    already_recorded_ancestors = {e.source for e in workspace.edges.incoming(target_artifact_id)}
+    # Only genuinely *recorded* ancestors are excluded from the hidden-lineage
+    # neighborhood. A merely *inferred* edge (not yet replay-confirmed or
+    # rejected) must remain eligible so a later candidate-recovery pass (e.g.
+    # inside a revocation workflow) can still find and replay it.
+    already_recorded_ancestors = {
+        e.source for e in workspace.edges.incoming(target_artifact_id) if e.evidence_class.value == "recorded"
+    }
 
     target_time = _parse_iso(target_derivation.started_at) if target_derivation else _parse_iso(target.created_at)
     target_recipe = target_derivation.recipe if target_derivation else None

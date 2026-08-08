@@ -14,7 +14,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from .enums import ArtifactKind, EvidenceClass, LifecycleStatus, RelationType, ReplayVerdict, RevocationPolicy, RevocationState, Severity
+from .enums import (
+    ArtifactKind,
+    EvidenceClass,
+    LifecycleStatus,
+    RelationType,
+    ReplayVerdict,
+    RevocationPolicy,
+    RevocationState,
+    Severity,
+)
 
 
 @dataclass(slots=True)

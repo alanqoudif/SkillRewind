@@ -17,7 +17,7 @@ from ..features.temporal import temporal_proximity
 from ..inference.scoring import FeatureBreakdown, ScoreResult, score_candidate
 from ..workspace import Workspace, timestamp
 from .closure import build_graph
-from .neighborhoods import NeighborhoodEntry, build_neighborhood
+from .neighborhoods import build_neighborhood
 
 
 @dataclass(frozen=True, slots=True)

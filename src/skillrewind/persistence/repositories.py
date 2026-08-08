@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 from ..canonical.json import canonical_bytes
-from ..domain.enums import EvidenceClass, LifecycleStatus, RelationType, ReplayVerdict, RevocationPolicy, RevocationState, Severity
+from ..domain.enums import (
+    EvidenceClass,
+    LifecycleStatus,
+    RelationType,
+    RevocationPolicy,
+    RevocationState,
+    Severity,
+)
 from ..domain.errors import NotFoundError
 from ..domain.models import Artifact, Derivation, InfluenceEdge, ReplayRecord, RevocationEvent, Waiver
 
