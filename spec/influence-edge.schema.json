@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillrewind.dev/spec/influence-edge.schema.json",
+  "title": "SkillRewind Influence Edge",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "target", "evidence_class", "status"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "source": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "relation": {"type": "string"},
+    "evidence_class": {
+      "enum": ["recorded", "inferred", "replay-confirmed", "rejected", "unresolved"]
+    },
+    "status": {"enum": ["active", "revoked", "quarantined", "superseded"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "reference"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "manifest",
+              "expression-trace",
+              "implementation-trace",
+              "operational-trace",
+              "behavioral-trace",
+              "graph-prior",
+              "counterfactual-replay",
+              "human-review",
+              "other"
+            ]
+          },
+          "reference": {"type": "string"},
+          "score": {"type": "number"},
+          "notes": {"type": "string"}
+        }
+      },
+      "default": []
+    },
+    "intervention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "present_run_digest": {"type": "string"},
+        "withheld_run_digest": {"type": "string"},
+        "control": {"type": "string"},
+        "repetitions": {"type": "integer", "minimum": 1},
+        "effect_size": {"type": "number"},
+        "confidence_interval": {
+          "type": "array",
+          "prefixItems": [{"type": "number"}, {"type": "number"}],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "replay_fidelity": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this research starter, please cite it as below."
+title: "SkillRewind: Recovering Hidden Influence Lineage for Verified Revocation in Self-Evolving LLM Agents"
+type: software
+authors:
+  - family-names: "Al-Anqoudi"
+    given-names: "Faisal Ali Said"
+    affiliation: "Nuqta Technologies"
+version: 0.1.0
+date-released: 2026-08-09
+license: Apache-2.0
+abstract: >-
+  A research starter for recovering missing influence lineage, testing uncertain
+  relationships through counterfactual re-derivation, and producing bounded
+  revocation attestations for persistent self-evolved agent skills.
+keywords:
+  - LLM agents
+  - agent skills
+  - provenance
+  - causal replay
+  - revocation
+  - unlearning
+  - AI security

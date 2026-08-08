@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.1",
+  "event_id": "revoke-20260809-fast-http",
+  "mode": "balanced",
+  "started_at": "2026-08-09T00:10:00Z",
+  "completed_at": "2026-08-09T00:14:00Z",
+  "tool_version": "0.1.0",
+  "revocation_reason": "Unsafe TLS verification rule in an inert benchmark case.",
+  "revoked_roots": ["skill://fast-http@sha256:bad001"],
+  "replayability_boundary": {
+    "description": "Captured derivations using the pinned local evolver and sandbox image.",
+    "model_identifiers": ["openai-compatible:model-snapshot"],
+    "environment_digests": ["sha256:env001"],
+    "known_gaps": ["One legacy imported template has no task snapshot."]
+  },
+  "recorded_closure": [
+    "skill://fast-http@sha256:bad001",
+    "trace://run-184@sha256:trace01"
+  ],
+  "inferred_candidates": [
+    {
+      "source": "skill://fast-http@sha256:bad001",
+      "target": "skill://deploy-fastapi@sha256:91ab12",
+      "confidence": 0.84,
+      "evidence_reference": "evidence://candidate-01"
+    }
+  ],
+  "replay_confirmed": [
+    {
+      "source": "skill://fast-http@sha256:bad001",
+      "target": "skill://deploy-fastapi@sha256:91ab12",
+      "confidence": 0.96,
+      "evidence_reference": "replay://pair-01"
+    }
+  ],
+  "rejected": [],
+  "quarantined": ["skill://deploy-fastapi@sha256:91ab12"],
+  "rebuilt": [
+    {
+      "old_artifact_id": "skill://deploy-fastapi@sha256:91ab12",
+      "new_artifact_id": "skill://deploy-fastapi@sha256:clean02",
+      "verification_status": "passed",
+      "report_digest": "sha256:verify02"
+    }
+  ],
+  "unresolved": [
+    {
+      "artifact_id": "template://legacy-deploy@sha256:legacy1",
+      "reason": "No replayable derivation snapshot.",
+      "severity": "medium"
+    }
+  ],
+  "verification": {
+    "status": "passed",
+    "suite_ids": ["deployment-safety-v1", "clean-utility-v1"],
+    "target_behavior_observed": false,
+    "clean_utility_retained": 0.94,
+    "reports": ["sha256:verify02"]
+  },
+  "cost": {
+    "replay_calls": 6,
+    "input_tokens": 12000,
+    "output_tokens": 3500,
+    "wall_clock_seconds": 240
+  },
+  "bounded_claims": [
+    "No active artifact remains in the recorded and replay-confirmed closure.",
+    "The target canary behavior was not observed under the declared verifier suite.",
+    "One legacy artifact remains unresolved and outside the replayability boundary."
+  ]
+}

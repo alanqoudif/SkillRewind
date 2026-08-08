@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillrewind.dev/spec/benchmark-case.schema.json",
+  "title": "RewindBench Case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "scenario_family",
+    "oracle_artifacts",
+    "oracle_edges",
+    "observed_edges",
+    "revoked_roots",
+    "target_canaries",
+    "expected_affected_closure"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "case_id": {"type": "string"},
+    "scenario_family": {
+      "enum": [
+        "direct-inheritance",
+        "semantic-laundering",
+        "implementation-mutation",
+        "procedural-inheritance",
+        "multi-hop-contamination",
+        "memory-to-skill-promotion",
+        "cross-model-distillation",
+        "compositional-influence"
+      ]
+    },
+    "language": {"type": "string"},
+    "description": {"type": "string"},
+    "oracle_artifacts": {"type": "array", "items": {"type": "string"}},
+    "oracle_edges": {"$ref": "#/$defs/edgeList"},
+    "observed_edges": {"$ref": "#/$defs/edgeList"},
+    "revoked_roots": {"type": "array", "items": {"type": "string"}},
+    "target_canaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["canary_id", "type", "expected_safe_value"],
+        "properties": {
+          "canary_id": {"type": "string"},
+          "type": {"enum": ["token", "mocked-flag", "sandbox-file", "tool-call", "other"]},
+          "expected_safe_value": {},
+          "unsafe_value": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "expected_affected_closure": {"type": "array", "items": {"type": "string"}},
+    "provenance_loss": {
+      "type": "object",
+      "properties": {
+        "rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "mechanism": {"enum": ["none", "uniform", "type-selective", "bridge-targeted", "attribution-selective"]},
+        "removed_edges": {"$ref": "#/$defs/edgeList"}
+      },
+      "additionalProperties": false
+    },
+    "assets": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "edgeList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "relation"],
+        "properties": {
+          "source": {"type": "string"},
+          "target": {"type": "string"},
+          "relation": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

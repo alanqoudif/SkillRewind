@@ -1,0 +1,4 @@
+{"source":"skill://fast-http@sha256:bad001","target":"trace://run-184@sha256:trace01","relation":"context-exposure"}
+{"source":"trace://run-184@sha256:trace01","target":"skill://deploy-fastapi@sha256:desc001","relation":"distilled-from"}
+{"source":"skill://deploy-fastapi@sha256:desc001","target":"code://service-template@sha256:code001","relation":"generated"}
+{"source":"skill://independent-http@sha256:clean001","target":"code://independent-client@sha256:code002","relation":"generated"}

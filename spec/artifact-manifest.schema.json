@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillrewind.dev/spec/artifact-manifest.schema.json",
+  "title": "SkillRewind Artifact Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "digest",
+    "kind",
+    "created_at",
+    "builder",
+    "recorded_inputs",
+    "replayability"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "digest": {"type": "string", "pattern": "^(sha256|blake3):[A-Fa-f0-9]{6,}$"},
+    "kind": {
+      "type": "string",
+      "enum": [
+        "trajectory",
+        "memory",
+        "summary",
+        "agent-skill",
+        "prompt-patch",
+        "source-code",
+        "configuration",
+        "template",
+        "validation-record",
+        "other"
+      ]
+    },
+    "logical_name": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "builder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recipe", "recipe_version", "model", "environment_digest"],
+      "properties": {
+        "recipe": {"type": "string"},
+        "recipe_version": {"type": "string"},
+        "model": {"type": "string"},
+        "provider": {"type": "string"},
+        "decoding_config_digest": {"type": "string"},
+        "environment_digest": {"type": "string"},
+        "task_snapshot_digest": {"type": "string"},
+        "workspace_snapshot_digest": {"type": "string"}
+      }
+    },
+    "recorded_inputs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/inputRef"}
+    },
+    "context_exposures": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/inputRef"},
+      "default": []
+    },
+    "candidate_context_pool_digest": {"type": "string"},
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "suite_id": {"type": "string"},
+        "status": {"enum": ["passed", "failed", "partial", "not-run"]},
+        "report_digest": {"type": "string"}
+      }
+    },
+    "replayability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["replayable", "partial", "forensic-only"]},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "metadata": {"type": "object"}
+  },
+  "$defs": {
+    "inputRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "relation"],
+      "properties": {
+        "artifact_id": {"type": "string"},
+        "relation": {
+          "type": "string",
+          "enum": [
+            "used-as-input",
+            "retrieved-during-derivation",
+            "distilled-from",
+            "revised-from",
+            "validated-by",
+            "context-exposure",
+            "other"
+          ]
+        }
+      }
+    }
+  }
+}

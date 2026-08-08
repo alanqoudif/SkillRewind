@@ -1,0 +1,43 @@
+{
+  "schema_version": "0.1",
+  "artifact_id": "skill://deploy-fastapi@sha256:91ab12",
+  "digest": "sha256:91ab12",
+  "kind": "agent-skill",
+  "logical_name": "deploy-fastapi",
+  "created_at": "2026-08-09T00:00:00Z",
+  "builder": {
+    "recipe": "skill-distillation",
+    "recipe_version": "0.1",
+    "model": "openai-compatible:model-snapshot",
+    "provider": "local-test",
+    "decoding_config_digest": "sha256:dec001",
+    "environment_digest": "sha256:env001",
+    "task_snapshot_digest": "sha256:task001",
+    "workspace_snapshot_digest": "sha256:work001"
+  },
+  "recorded_inputs": [
+    {
+      "artifact_id": "trace://run-184@sha256:trace01",
+      "relation": "distilled-from"
+    }
+  ],
+  "context_exposures": [
+    {
+      "artifact_id": "skill://fast-http@sha256:bad001",
+      "relation": "context-exposure"
+    }
+  ],
+  "candidate_context_pool_digest": "sha256:pool001",
+  "validation": {
+    "suite_id": "deployment-safety-v1",
+    "status": "passed",
+    "report_digest": "sha256:report01"
+  },
+  "replayability": {
+    "status": "replayable",
+    "limitations": ["Hosted model determinism is not guaranteed."]
+  },
+  "metadata": {
+    "format": "agent-skills"
+  }
+}
