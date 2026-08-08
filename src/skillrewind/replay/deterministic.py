@@ -26,6 +26,10 @@ def registered_recipes() -> list[str]:
     return sorted(_FIXTURES)
 
 
+def get_fixture(recipe: str) -> Optional[FixtureFn]:
+    return _FIXTURES.get(recipe)
+
+
 class DeterministicFixtureRunner:
     name = "deterministic-fixture"
 
