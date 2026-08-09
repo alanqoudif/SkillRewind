@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — v0.3.0 work in progress (branch `feat/v0.3-completion`)
+
+### Added
+- `docs/completion-matrix-v0.3.md`, `docs/implementation-plan-v0.3.md`: evidence-based v0.3 gap inventory and phase plan.
+- `skillrewind.persistence.service`: additive SQLAlchemy 2.0 models + Alembic migrations (`migrations/`) for Service-mode persistence (PostgreSQL target; SQLite exercised in tests since no live PostgreSQL server was reachable in the authoring environment). Does not modify Lite mode's existing `sqlite3`-based persistence.
+- `skillrewind doctor` now checks Service-mode schema currency and fails (nonzero exit) when the configured database is behind the Alembic head.
+- `make db-migrate` / `make db-current` targets; `service` optional dependency group (`sqlalchemy`, `alembic`, `psycopg[binary]`).
+- `docs/adr/0009-service-mode-persistence.md`.
+- 10 new tests (`tests/integration/test_service_persistence.py`, `tests/integration/test_doctor_service_mode.py`); 1 test skips honestly pending a reachable PostgreSQL instance.
+
 ## [0.2.0] — Research Preview
 
 ### Added

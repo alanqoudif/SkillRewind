@@ -1,8 +1,15 @@
-# Project status — version 0.2.0 (Research Preview)
+# Project status — version 0.2.0 (Research Preview), v0.3.0 work in progress on `feat/v0.3-completion`
 
 This file lists exactly what is implemented, tested, and honestly claimed as of this release, and what is explicitly deferred. If a capability is not listed under "Implemented," assume it does not exist — do not infer it from the master specification this repository was built against.
 
-## Implemented and tested
+## v0.3.0 progress (branch `feat/v0.3-completion`, not yet merged to `main`)
+
+See `docs/completion-matrix-v0.3.md` for the full evidence-based inventory and `docs/implementation-plan-v0.3.md` for the phase sequence. As of this commit:
+
+- **Service-mode persistence (Phase A, partial)**: a new, additive `skillrewind.persistence.service` package adds SQLAlchemy 2.0 models for the full Service-mode entity set (artifacts, edges, candidate scores, replay records, revocation events/transitions, quarantine, waivers, rebuild plans/attempts, verification reports, attestations, an audit-event projection, API keys, idempotency records, durable jobs + job events, benchmark runs), with real Alembic migrations at `migrations/` and a `schema_current()` check wired into `skillrewind doctor` (fails readiness — nonzero exit — when Service mode is configured and the schema is behind head). See `docs/adr/0009-service-mode-persistence.md` for why this is additive rather than a rewrite of Lite mode's existing `sqlite3`-based repositories, which are untouched. PostgreSQL itself has not been exercised against a live server in this environment (Docker's daemon is not running here — `docker info` fails to connect); the Postgres-specific test skips honestly with that exact reason and runs for real wherever `SKILLREWIND_TEST_POSTGRES_URL` points at a reachable PostgreSQL instance.
+- **Not yet built**: the durable job/worker system that consumes the `jobs`/`job_events` tables (Phase B), the FastAPI service (Phase C), the web dashboard (Phase D), Docker sandbox replay (Phase E), the remaining 5 RewindBench scenario families and calibration pipeline (Phase F), and everything in Phases G–K. Do not infer any of these exist.
+
+## Implemented and tested (v0.2.0 baseline — still current on `main`)
 
 ### Foundation
 - Deterministic, project-specific canonical JSON serialization (`skillrewind.canonical.json`) with SHA-256 hashing; rejects NaN/Infinity/raw bytes.

@@ -1,5 +1,5 @@
-.PHONY: bootstrap format lint typecheck test test-unit test-integration test-property test-e2e test-security \
-        schemas bench-smoke demo demo-reset docs paper docker-build docker-smoke ci clean
+.PHONY: bootstrap bootstrap-service format lint typecheck test test-unit test-integration test-property test-e2e test-security \
+        schemas bench-smoke demo demo-reset docs paper docker-build docker-smoke db-migrate db-current ci clean
 
 VENV := .venv
 PY := $(VENV)/bin/python
@@ -7,6 +7,10 @@ PY := $(VENV)/bin/python
 bootstrap:
 	uv venv --python 3.12 $(VENV)
 	uv pip install -e ".[dev]" --python $(PY)
+
+bootstrap-service:
+	uv venv --python 3.12 $(VENV)
+	uv pip install -e ".[dev,service]" --python $(PY)
 
 format:
 	$(PY) -m ruff format src tests examples
@@ -68,6 +72,19 @@ docker-build:
 
 docker-smoke:
 	@echo "Docker images are not implemented in this session; see STATUS.md."
+
+db-migrate:
+	@if [ -z "$$SKILLREWIND_DATABASE_URL" ]; then \
+		echo "SKILLREWIND_DATABASE_URL is not set. Example: export SKILLREWIND_DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/skillrewind"; \
+		exit 1; \
+	fi
+	$(PY) -m alembic upgrade head
+
+db-current:
+	@if [ -z "$$SKILLREWIND_DATABASE_URL" ]; then \
+		echo "SKILLREWIND_DATABASE_URL is not set."; exit 1; \
+	fi
+	$(PY) -c "from skillrewind.persistence.service.engine import build_engine, schema_current; import os; e = build_engine(os.environ['SKILLREWIND_DATABASE_URL']); ok, detail = schema_current(e); print(detail); raise SystemExit(0 if ok else 1)"
 
 ci: lint typecheck test schemas bench-smoke
 

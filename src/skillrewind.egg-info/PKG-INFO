@@ -1,11 +1,11 @@
 Metadata-Version: 2.4
 Name: skillrewind
-Version: 0.1.0
-Summary: Recorded-lineage baseline and research schemas for revoking persistent AI-agent skills.
+Version: 0.2.0
+Summary: Recovering hidden influence lineage for verified revocation in self-evolving LLM agents (research preview).
 Author: Faisal Ali Said Al-Anqoudi
 License: Apache-2.0
 Keywords: llm-agents,agent-skills,provenance,revocation,ai-security
-Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Development Status :: 3 - Alpha
 Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.11
@@ -15,153 +15,149 @@ Classifier: Topic :: Security
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: cryptography>=42.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: hypothesis>=6.0; extra == "dev"
+Requires-Dist: ruff>=0.6; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+Provides-Extra: service
+Requires-Dist: alembic>=1.13; extra == "service"
+Requires-Dist: psycopg[binary]>=3.1; extra == "service"
+Requires-Dist: sqlalchemy>=2.0; extra == "service"
 Dynamic: license-file
 
 # SkillRewind
 
 **Recover hidden influence lineage and revoke persistent behavior in self-evolving AI agents.**
 
-> AI agents can learn reusable skills. SkillRewind investigates how they can reliably retract what those skills caused.
+> AI agents can learn reusable skills. SkillRewind makes persistent learned artifacts attributable, revocable, selectively rebuildable, and verifiable within a declared evidence boundary.
 
-[![Status: Research Proposal](https://img.shields.io/badge/status-research%20proposal-1f4e79)](#project-status)
+[![Status: Research Preview](https://img.shields.io/badge/status-research%20preview-1f4e79)](#project-status)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-0f766e)](LICENSE)
 
 ## Project status
 
-This repository is a **research starter, version 0.1**. It contains a publication-oriented proposal, a formal RFC, machine-readable schemas, the RewindBench design, and a tested recorded-lineage baseline. It does **not** claim experimental results yet.
+Version **0.2.0**, **Research Preview**. This release implements a real, tested, fully offline, deterministic-fixture-driven vertical slice of the SkillRewind workflow: ingest artifacts, capture derivations, compute deterministic recorded closure, recover hidden-lineage candidates via explainable static scoring, confirm candidates through paired counterfactual replay, run a barrier-first revocation state machine, quarantine confirmed descendants, rebuild clean successors, verify them, and emit a bounded, optionally Ed25519-signed attestation — all reachable from one CLI and one library API, backed by a real SQLite database and a real hash-chained audit log.
 
-The current paper title is:
+It does **not** yet implement a service-mode HTTP API, worker queue, PostgreSQL backend, web dashboard, Docker deployment, or CI/CD pipeline. See [`STATUS.md`](STATUS.md) for the exact, current implemented/not-implemented boundary — do not infer scope from this README's aspirational architecture diagram alone.
+
+The current research title is:
 
 > **SkillRewind: Recovering Hidden Influence Lineage for Verified Revocation in Self-Evolving LLM Agents**
 
 ## The problem
 
-Self-evolving agents can distill trajectories, memories, tool interactions, and documents into persistent skills. Deleting a poisoned or obsolete source does not necessarily remove its effect: later skills may preserve the behavior after paraphrasing instructions, rewriting code, changing tools, or passing through multiple generations.
+Self-evolving agents can distill trajectories, memories, tool interactions, and documents into persistent skills. Deleting a poisoned or obsolete source does not necessarily remove its effect: later skills may preserve the behavior after paraphrasing instructions, rewriting code, changing tools, or passing through multiple generations — and the influence edge back to the source is often never recorded.
 
-Recorded provenance helps only when the lineage graph is complete. The research question behind SkillRewind is:
+> When a skill, memory, trace, prompt patch, or other persistent agent artifact is revoked, deleting the source is insufficient if its influence has propagated into descendants whose provenance edges are missing, transformed, or incomplete. SkillRewind recovers plausible hidden influence, tests selected relationships through counterfactual re-derivation, quarantines confirmed or high-risk descendants, rebuilds them from clean support, verifies safety and retained utility, and emits a bounded attestation that clearly distinguishes facts, inferences, interventions, and unresolved uncertainty.
 
-> Can an agent recover missing influence relationships through multi-trace evidence and counterfactual re-derivation, then selectively quarantine or rebuild affected artifacts without destroying clean utility?
+## Architecture
 
-## Proposed revocation contract
-
-SkillRewind separates four evidence levels:
-
-1. **Recorded** — exact input and derivation edges captured at creation time.
-2. **Inferred** — candidate hidden edges supported by expression, implementation, operational, behavioral, graph, and temporal traces.
-3. **Replay-confirmed** — uncertain relationships tested by paired counterfactual re-derivation.
-4. **Unresolved** — artifacts outside the declared replay or validation boundary.
-
-The proposed pipeline is:
-
-```text
-immutable capture
-    -> hard closure over recorded lineage
-    -> multi-trace hidden-lineage recovery
-    -> budgeted counterfactual re-derivation
-    -> quarantine
-    -> clean-room rebuild
-    -> safety and utility verification
-    -> bounded revocation attestation
+```mermaid
+flowchart TD
+    A[Agent Skills dir / capture SDK / JSONL trace] -->|ingest| B[(Content-addressed store)]
+    B --> C[(SQLite workspace: artifacts, derivations, edges, jobs)]
+    C --> D[Recorded-lineage closure]
+    D --> E[Hidden-lineage candidate scoring<br/>expression / implementation / operational / behavioral / graph / temporal]
+    E -->|inferred candidates| F[Budget-aware active replay selector]
+    F --> G[Paired counterfactual replay<br/>present vs withheld, deterministic-fixture or sandboxed-subprocess runner]
+    G -->|confirmed / rejected / unresolved| H[Revocation state machine<br/>forensic / balanced / strict]
+    H --> I[Quarantine + waivers]
+    I --> J[Clean-room rebuild<br/>excludes revoked + replay-confirmed ancestors]
+    J --> K[Verification suite]
+    K -->|pass| L[Successor published under original alias]
+    H --> M[Bounded attestation<br/>canonical JSON, Ed25519-signable]
+    C --> N[Hash-chained audit log]
 ```
 
-## What is new in the working hypothesis
+Everything above the dashed line the spec envisions for a full deployment (HTTP API, durable job workers, PostgreSQL, React dashboard, Docker Compose) is **not implemented in this release** and is not shown here; see `STATUS.md`.
 
-The project does not claim that provenance, cascade repair, taint tracking, or agent unlearning are new individually. The intended contribution is their combination under a stricter setting:
+## Evidence classes
 
-- persistent self-evolved skill artifacts;
-- missing or unrecorded influence edges;
-- active interventional recovery instead of similarity alone;
-- selective cascade rebuilding; and
-- an evidence-typed attestation that exposes residual uncertainty.
+SkillRewind never calls correlation causal. Every edge carries one of five evidence classes, and promotion between them preserves prior evidence rather than erasing it:
 
-The novelty statement is provisional and must be re-audited before submission.
+1. **recorded** — directly captured as an input or exposure at derivation time.
+2. **inferred** — supported by static multi-trace scoring; not causal.
+3. **replay-confirmed** — supported by a paired intervention (present vs. withheld) within a declared, fully-reconstructed replay boundary.
+4. **rejected** — tested but not supported under the declared intervention and probes; not universal proof of no influence.
+5. **unresolved** — not replayable, inconclusive, outside budget, or outside coverage. A runner failure becomes `unresolved`, never `rejected`.
 
-## Repository map
+`recorded_descendants()` (the "recorded closure") strictly traverses `recorded`-evidence edges only — inferred, replay-confirmed, rejected, and unresolved edges never silently expand what a barrier or serving-resolution decision treats as "recorded."
 
-```text
-.
-├── paper/                         # LaTeX research proposal and references
-├── rfc/0001-hidden-lineage-revocation.md
-├── spec/                          # JSON Schemas and examples
-├── benchmark/                     # RewindBench design and example case
-├── src/skillrewind/               # Recorded-lineage baseline implementation
-├── tests/                         # Standard-library unit tests
-├── examples/                      # Small graph used by the CLI
-├── pyproject.toml
-├── CITATION.cff
-└── LICENSE
-```
-
-## Run the current baseline
-
-The included code implements only the deterministic **recorded-lineage closure** baseline. Hidden-lineage inference and replay are research milestones, not silently mocked features.
+## 5-minute quickstart
 
 ```bash
-python -m pip install -e .
-skillrewind closure \
-  --edges examples/recorded_edges.jsonl \
-  --root skill://fast-http@sha256:bad001
+git clone <this-repo> && cd SkillRewind
+make bootstrap          # uv venv + editable install with dev extras
+make demo                # runs the full poisoned-descendant scenario end to end
 ```
 
-Generate a recorded-evidence attestation:
+`make demo` initializes an isolated workspace at `.skillrewind-demo/`, ingests three Agent Skills directories, recovers a hidden-lineage candidate that recorded closure misses, replay-confirms it, runs a `balanced` revocation, quarantines the confirmed descendant, rebuilds and verifies a clean successor, republishes it under the original alias, and writes a signed attestation to `.skillrewind-demo/attestation.{json,md,html}`. It prints 13 numbered milestones tracing each step. Reset it with `make demo-reset`.
+
+### CLI
 
 ```bash
-skillrewind attest \
-  --edges examples/recorded_edges.jsonl \
-  --root skill://fast-http@sha256:bad001 \
-  --output recorded-attestation.json
+skillrewind --workspace .skillrewind init
+skillrewind --workspace .skillrewind artifact-ingest-skill ./my-skill --alias my-skill
+skillrewind --workspace .skillrewind closure --root skill://my-skill@sha256:...
+skillrewind --workspace .skillrewind candidates --target skill://descendant@sha256:...
+skillrewind --workspace .skillrewind revoke-start --root skill://my-skill@sha256:... \
+  --policy balanced --reason "..." --severity high
+skillrewind --workspace .skillrewind audit-verify
 ```
 
-Run tests:
+Run `skillrewind <command> --help` for full flag lists. The v0.1 recorded-only commands remain supported unchanged:
 
 ```bash
-python -m unittest discover -s tests -v
+skillrewind closure --edges examples/recorded_edges.jsonl --root skill://fast-http-deploy@0.1.0
+skillrewind attest  --edges examples/recorded_edges.jsonl --root skill://fast-http-deploy@0.1.0 --output attestation.json
 ```
 
-## RewindBench
+## What is implemented vs. not implemented
 
-The benchmark will plant complete oracle lineage and then remove edges under controlled missingness. Planned scenario families include:
-
-- direct inheritance;
-- semantic laundering;
-- implementation mutation;
-- procedural inheritance;
-- multi-hop contamination;
-- memory-to-skill promotion;
-- cross-model distillation; and
-- compositional influence.
-
-All security effects must be inert canaries or mocked side effects in isolated sandboxes.
-
-## Research milestones
-
-| Phase | Deliverable |
+| Area | Status |
 |---|---|
-| 0 | Proposal, RFC, schemas, recorded-closure baseline |
-| 1 | RewindBench-Core generator and provenance-loss operators |
-| 2 | Multi-trace candidate recovery and calibrated strict negatives |
-| 3 | Counterfactual re-derivation and active replay selection |
-| 4 | Quarantine, clean-room rebuilding, validation, and attestation |
-| 5 | Public-system adapters, experiments, ablations, and paper |
+| Content-addressed storage, canonical JSON, artifact IDs | ✅ Implemented, tested (integrity, dedup, corruption detection) |
+| SQLite persistence, hash-chained audit log | ✅ Implemented, tested (tamper detection) |
+| Agent Skills ingestion/export | ✅ Implemented, tested (traversal/symlink/malformed fixtures) |
+| Capture SDK + generic JSONL trace import | ✅ Implemented, tested |
+| Recorded-lineage closure/ancestry/graph export | ✅ Implemented, tested (property tests vs. in-memory) |
+| Hidden-lineage candidate scoring (6 feature families) | ✅ Implemented, tested; hand-weighted, provisional weights |
+| Deterministic + sandboxed-subprocess replay runners | ✅ Implemented, tested; OpenAI-compatible runner **not implemented** |
+| Paired intervention, fidelity, statistics, classification | ✅ Implemented, tested |
+| Budget-aware active replay selector + 3 baselines | ✅ Implemented, tested |
+| Revocation state machine (forensic/balanced/strict), barrier | ✅ Implemented, tested |
+| Quarantine, waivers, serving-resolution (`resolve`) | ✅ Implemented, tested |
+| Clean-room rebuild + verification suites | ✅ Implemented, tested |
+| Bounded attestation v0.2 (build/render/sign/verify) | ✅ Implemented, tested (tamper detection) |
+| RewindBench-core (generator, 4 baselines, metrics, presets) | ✅ Implemented, tested; only `direct-inheritance`/`semantic-laundering`/`implementation-mutation` scenario families, English only |
+| CLI (30+ commands) | ✅ Implemented |
+| HTTP API, durable job worker/queue | ❌ Not implemented |
+| PostgreSQL / service mode, Docker Compose | ❌ Not implemented |
+| React web dashboard | ❌ Not implemented |
+| CI/CD workflows, SBOM, container scanning | ❌ Not implemented |
+| Arabic/RTL localization | ❌ Not implemented |
+| Cross-model distillation, memory-to-skill, compositional-influence, procedural-inheritance, multi-hop scenario families | ❌ Not implemented |
+| Offline calibration pipeline (logistic regression / Platt scaling) for the scorer | ❌ Not implemented |
 
-## Evidence discipline
+## Security warning
 
-The project distinguishes targets from findings. Any future number in the paper must map to a frozen experiment, metric, raw artifact, and analysis script. Hosted-model results must be archived separately from fully reproducible local runs.
+This is a research preview. The candidate scorer's weights are hand-set and provisional, not calibrated against a validated held-out set. The sandboxed-subprocess replay runner has no real network namespace isolation — treat it as weaker than a container, and prefer the deterministic-fixture runner for anything untrusted. Do not point any component at production credentials, real infrastructure, or live agent traffic. All demo/test canaries are inert mocked booleans, never real exfiltration or destructive actions.
 
-## Closest related work
+## Benchmark status
 
-The proposal positions itself relative to MemoRepair, MemLineage, NeuroTaint, SkillTrace, SkillWiki, Agentic Unlearning, SkillJack, and PoisonedEvolution. Full references are in [`paper/references.bib`](paper/references.bib).
-
-A key motivating result from MemoRepair is that its cascade-repair guarantee depends on complete influence provenance; its reported experiment shows substantial leakage after dropping only a small fraction of influence edges. SkillRewind focuses on recovering and testing those missing relationships before repair.
-
-## Safety
-
-Do not use live credentials, destructive commands, real exfiltration targets, or production accounts in benchmark payloads. Use canary strings, mocked flags, temporary files, and sandbox-only endpoints. Newly discovered vulnerabilities should follow coordinated disclosure.
+`make bench-smoke` runs the `smoke` preset (3 deterministic cases) offline in seconds. `static-multitrace` and `exhaustive-replay` correctly recover the planted hidden descendant with zero false-quarantine of the strict-negative artifact, while `delete-root` and `recorded-closure` (which cannot see hidden lineage by construction) score zero recall — this is real, reproducible output from `make bench-smoke`, not a fabricated number. Sample sizes below 30 cases are explicitly reported as descriptive-only; no confidence-interval or significance claim is made below that threshold. The `research`/`paper` presets exist and are runnable but are not part of any automated gate.
 
 ## Citation
 
 A preliminary citation record is provided in [`CITATION.cff`](CITATION.cff). Update it with a DOI or archival identifier only after publication.
 
+## Contributing
+
+This is an early-stage research preview from a single maintainer. Issues and PRs are welcome; please run `make ci` before submitting. See [`STATUS.md`](STATUS.md) for what is safe to build on top of versus what is still in flux.
+
 ## License
 
-Apache License 2.0. See [`LICENSE`](LICENSE).
+Apache License 2.0. See [`LICENSE`](LICENSE). Copyright Faisal Ali Said Al-Anqoudi / Nuqta Technologies.

@@ -71,18 +71,55 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     report: dict[str, Any] = {"workspace": args.workspace, "checks": {}}
     ws_path = Path(args.workspace)
     report["checks"]["workspace_dir_exists"] = ws_path.is_dir()
+    exit_code = 0
     try:
         ws = _open_ws(args)
         report["checks"]["database_connects"] = True
         report["checks"]["schema_version"] = ws.schema_version
         report["checks"]["cas_root_writable"] = Path(ws.config.resolved_cas_root).exists()
         report["checks"]["audit_chain_valid"] = ws.audit.verify().ok
+        service_check = _check_service_mode(ws.config)
+        report["checks"]["service_mode"] = service_check
+        if ws.config.mode == "service" and not service_check.get("schema_current", False):
+            exit_code = 1
         ws.close()
     except Exception as exc:  # doctor must never crash the process
         report["checks"]["database_connects"] = False
         report["checks"]["error"] = str(exc)
+        exit_code = 1
     _write_json(report, args.output)
-    return 0
+    return exit_code
+
+
+def _check_service_mode(config: Any) -> dict[str, Any]:
+    """Report Service-mode schema/database readiness without ever raising.
+
+    Returns a dict, never partial state disguised as success. If ``mode`` is
+    ``"lite"`` this reports that Service mode is simply not in use -- it is
+    not an error for a Lite deployment to have no PostgreSQL configured.
+    """
+
+    if config.mode != "service":
+        return {"applicable": False, "reason": "mode is 'lite'; service-mode checks skipped"}
+    if not config.database_url:
+        return {"applicable": True, "schema_current": False, "reason": "service mode requires database_url"}
+    try:
+        from ..persistence.service.engine import build_engine, schema_current
+    except ModuleNotFoundError:
+        return {
+            "applicable": True,
+            "schema_current": False,
+            "reason": (
+                "sqlalchemy/alembic/psycopg not installed -- install the 'service' extra: "
+                "pip install 'skillrewind[service]'"
+            ),
+        }
+    try:
+        engine = build_engine(config.database_url)
+        is_current, detail = schema_current(engine)
+        return {"applicable": True, "schema_current": is_current, "reason": detail}
+    except Exception as exc:  # never let a doctor check crash the process
+        return {"applicable": True, "schema_current": False, "reason": f"connection failed: {exc}"}
 
 
 def _cmd_artifact_ingest(args: argparse.Namespace) -> int:

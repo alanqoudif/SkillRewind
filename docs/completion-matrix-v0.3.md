@@ -29,10 +29,14 @@ Legend: `complete` / `partial` / `missing` / `blocked-by-environment` / `intenti
 ### Persistence / Service mode (Phase A)
 | Requirement | Status | Evidence |
 |---|---|---|
-| SQLite WAL Lite mode | complete | `src/skillrewind/persistence/database.py`, `docs/adr/0003-persistence.md` |
+| SQLite WAL Lite mode | complete | `src/skillrewind/persistence/database.py`, `docs/adr/0003-persistence.md` (unchanged) |
 | Hash-chained audit log | complete | `src/skillrewind/audit/log.py`, tested tamper detection |
-| PostgreSQL service mode | missing | no `sqlalchemy`/`psycopg` dependency in `pyproject.toml` |
-| Migrations (Alembic or explicit) | missing | schema applied idempotently at `connect()`, no versioned migration files |
+| PostgreSQL service mode schema/engine | complete (schema layer only) | `src/skillrewind/persistence/service/{models,engine}.py`; SQLAlchemy 2.0, dialect-portable; not yet exercised against a live PostgreSQL server in this environment (Docker daemon not running) — see `docs/adr/0009-service-mode-persistence.md` |
+| Migrations (Alembic) | complete | `migrations/` (Alembic), `tests/integration/test_service_persistence.py::test_alembic_upgrade_head_on_fresh_database` |
+| Readiness fails on stale schema | complete | `skillrewind doctor` exits nonzero in Service mode when schema is behind head; `tests/integration/test_doctor_service_mode.py` |
+| Data migration: existing Lite SQLite -> Service PostgreSQL | missing | not started; ADR-0009 explicitly scopes this out as a separate ETL problem |
+| Domain services wired to Service-mode schema (jobs/API actually reading/writing it) | missing | schema exists but has no consumer yet — that's Phase B/C |
+| PostgreSQL concurrent-job-claim (`FOR UPDATE SKIP LOCKED`) | missing | no worker exists yet (Phase B) |
 | CAS backend abstraction / S3 adapter | partial | `src/skillrewind/cas/base.py` defines a protocol; only `local.py` implements it |
 
 ### Durable jobs / worker (Phase B)
