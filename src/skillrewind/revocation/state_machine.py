@@ -2,15 +2,28 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from ..domain.enums import ALLOWED_TRANSITIONS, RevocationState
 from ..domain.errors import InvalidStateTransitionError
 from ..domain.models import RevocationEvent
-from ..persistence.repositories import RevocationRepository
 from ..workspace import timestamp
 
 
+class RevocationRepositoryLike(Protocol):
+    """Structural contract satisfied by both `skillrewind.persistence.
+    repositories.RevocationRepository` (Lite mode) and `skillrewind.
+    persistence.service.workspace._ServiceRevocations` (Service mode) --
+    see `skillrewind.workspace_protocol` for the equivalent whole-workspace
+    contract and its reuse rationale."""
+
+    def update(self, event: RevocationEvent) -> None: ...
+
+    def record_transition(self, event_id: str, from_state: str | None, to_state: str, at: str) -> None: ...
+
+
 def transition(
-    repo: RevocationRepository, event: RevocationEvent, to_state: RevocationState
+    repo: RevocationRepositoryLike, event: RevocationEvent, to_state: RevocationState
 ) -> RevocationEvent:
     if event.state == to_state:
         # Re-entering the state we are already in is a no-op, not an error --

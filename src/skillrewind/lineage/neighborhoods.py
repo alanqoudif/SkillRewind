@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from ..workspace import Workspace
+from ..workspace_protocol import WorkspaceLike
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,7 +32,7 @@ def _parse_iso(ts: str | None) -> datetime | None:
 
 
 def build_neighborhood(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     target_artifact_id: str,
     *,
     time_window: timedelta = timedelta(hours=6),

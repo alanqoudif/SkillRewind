@@ -9,7 +9,8 @@ from typing import Optional
 from ..config import SkillRewindConfig
 from ..domain.enums import EvidenceClass, RelationType, ReplayVerdict
 from ..domain.models import InfluenceEdge, ReplayRecord
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 from .base import RunnerOutput, get_runner
 from .comparator import compare_target_behavior
 from .fidelity import build_fidelity_report
@@ -27,7 +28,7 @@ class ReplayOutcome:
 
 
 def run_paired_replay(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     candidate_ancestor_id: str,
     target_derivation_id: str,
     *,

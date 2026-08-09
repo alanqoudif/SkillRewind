@@ -26,6 +26,7 @@ from ..lineage.service_recovery import run_candidate_recovery
 from ..persistence.service.engine import build_engine
 from ..replay.service_mode import VERDICT_TO_EVIDENCE_CLASS, build_domain_derivation, run_service_replay
 from ..revocation.service import run_revocation
+from ..verification.suites import VerificationSuite
 from ..workspace import Workspace
 from .errors import PermanentJobError, RetryableJobError
 from .worker import JobContext, register_handler
@@ -98,32 +99,107 @@ def parse_summary(result_reference: str) -> dict:
 @register_handler("revocation.execute")
 def run_revocation_job(ctx: JobContext) -> str:
     """Runs (or resumes) a revocation event to completion via the real,
-    checkpoint-resumable `run_revocation` service call against a Lite-mode
-    workspace on disk. Never duplicates quarantine/rebuild/attestation
-    side effects across a crash-and-retry: `run_revocation` itself refuses to
-    redo work already recorded on the persisted event, and a call on an
-    already-terminal event is a complete no-op.
+    checkpoint-resumable `run_revocation` service call.
+
+    Two payload shapes are accepted, both dispatching to the *same*
+    `run_revocation` orchestration (master spec Phase C2.3 section 17: "do
+    not create unnecessary job fragmentation"):
+
+    - Lite mode: `{"workspace_dir": ..., "event_id": ...}` -- opens a
+      Lite-mode `Workspace` on disk, as before.
+    - Service mode: `{"database_url": ..., "cas_root": ..., "event_id": ...}`
+      -- opens a `ServiceWorkspace` (Phase C2.3) backed by the real
+      SQLAlchemy database/CAS, so a revocation submitted through the
+      Service-mode API is executed against Service-mode persistence, never
+      a separate Lite-mode workspace.
+
+    Never duplicates quarantine/rebuild/attestation side effects across a
+    crash-and-retry: `run_revocation` itself refuses to redo work already
+    recorded on the persisted event, and a call on an already-terminal event
+    is a complete no-op. In Service mode, after `run_revocation` returns,
+    newly-produced rebuild/verification results are additionally
+    materialized into the queryable `rebuild_attempts`/`verification_reports`
+    tables (idempotently -- see `_materialize_rebuild_records`), and, if
+    requested, a bounded attestation is built and optionally signed.
     """
 
-    workspace_dir = ctx.payload.get("workspace_dir")
     event_id = ctx.payload.get("event_id")
-    if not workspace_dir or not event_id:
-        raise PermanentJobError("revocation.execute requires 'workspace_dir' and 'event_id'")
+    if not event_id:
+        raise PermanentJobError("revocation.execute requires 'event_id'")
+
+    database_url = ctx.payload.get("database_url")
+    cas_root = ctx.payload.get("cas_root")
+    workspace_dir = ctx.payload.get("workspace_dir")
+
+    suite_cfg = ctx.payload.get("verification_suite") or {}
+    suite = VerificationSuite(
+        suite_id=suite_cfg.get("suite_id", "default"),
+        version=suite_cfg.get("version", "0.1.0"),
+        canary_keys=tuple(suite_cfg.get("canary_keys", ())),
+        utility_retention_threshold=suite_cfg.get("utility_retention_threshold", 0.0),
+    )
+    attempt_rebuild = bool(ctx.payload.get("attempt_rebuild", True))
+    attestation_requested = bool(ctx.payload.get("attestation_requested", False))
+    sign_requested = bool(ctx.payload.get("sign_requested", False))
 
     ctx.check_cancelled()
-    ws = Workspace.open(workspace_dir)
+
+    if database_url and cas_root:
+        from sqlalchemy.orm import Session
+
+        from ..persistence.service.workspace import ServiceWorkspace
+
+        engine = build_engine(database_url)
+        cas = LocalCAS(cas_root)
+        config = SkillRewindConfig(
+            mode="service",
+            database_url=database_url,
+            cas_root=cas_root,
+            attestation_signing_key_path=ctx.payload.get("attestation_signing_key_path", ""),
+            attestation_public_key_path=ctx.payload.get("attestation_public_key_path", ""),
+        )
+        session = Session(engine)
+        try:
+            ws = ServiceWorkspace(session, cas, config)
+            try:
+                event = ws.revocations.get(event_id)
+            except NotFoundError as exc:
+                raise PermanentJobError(f"unknown revocation event_id {event_id!r}: {exc}") from exc
+
+            ctx.heartbeat(current=0, total=1, message=f"resuming revocation {event_id} from state={event.state.value}")
+            result = run_revocation(ws, event, verification_suite=suite, attempt_rebuild=attempt_rebuild)
+
+            from ..revocation.attestation_service import materialize_rebuild_records
+
+            materialize_rebuild_records(session, result)
+
+            if attestation_requested and result.state.value.startswith("completed"):
+                from ..revocation.attestation_service import build_and_persist_attestation
+
+                build_and_persist_attestation(ws, session, config, result, sign=sign_requested)
+
+            ctx.heartbeat(current=1, total=1, message=f"revocation {event_id} finished in state={result.state.value}")
+            return f"{event_id}:{result.state.value}"
+        finally:
+            session.close()
+            engine.dispose()
+
+    if not workspace_dir:
+        raise PermanentJobError("revocation.execute requires either ('database_url' and 'cas_root') or 'workspace_dir'")
+
+    lite_ws = Workspace.open(workspace_dir)
     try:
         try:
-            event = ws.revocations.get(event_id)
+            event = lite_ws.revocations.get(event_id)
         except NotFoundError as exc:
             raise PermanentJobError(f"unknown revocation event_id {event_id!r}: {exc}") from exc
 
         ctx.heartbeat(current=0, total=1, message=f"resuming revocation {event_id} from state={event.state.value}")
-        result = run_revocation(ws, event)
+        result = run_revocation(lite_ws, event)
         ctx.heartbeat(current=1, total=1, message=f"revocation {event_id} finished in state={result.state.value}")
         return f"{event_id}:{result.state.value}"
     finally:
-        ws.close()
+        lite_ws.close()
 
 
 @register_handler("lineage.recover")

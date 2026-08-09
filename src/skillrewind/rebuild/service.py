@@ -8,7 +8,8 @@ from typing import Any, Optional
 from ..canonical.json import canonical_bytes
 from ..domain.enums import EvidenceClass, LifecycleStatus, RelationType
 from ..domain.models import Artifact, Derivation, InfluenceEdge
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 from .clean_room import execute_clean_room_recipe
 from .planner import RebuildPlan, plan_rebuild
 
@@ -21,7 +22,7 @@ class RebuildResult:
 
 
 def rebuild_artifact(
-    workspace: Workspace, artifact_id: str, *, revocation_event_id: Optional[str] = None, seed: Optional[int] = None
+    workspace: WorkspaceLike, artifact_id: str, *, revocation_event_id: Optional[str] = None, seed: Optional[int] = None
 ) -> RebuildResult:
     plan = plan_rebuild(workspace, artifact_id)
     original = workspace.artifacts.get(artifact_id)
@@ -105,7 +106,7 @@ def rebuild_artifact(
     return RebuildResult(plan=plan, new_artifact=new_artifact, fixture_output=output)
 
 
-def publish_successor(workspace: Workspace, original_artifact_id: str, new_artifact_id: str) -> None:
+def publish_successor(workspace: WorkspaceLike, original_artifact_id: str, new_artifact_id: str) -> None:
     """Atomically promote a verified successor: release its quarantine, mark
     the original superseded, and move any alias across."""
 

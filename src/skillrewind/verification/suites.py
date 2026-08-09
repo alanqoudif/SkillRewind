@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from ..domain.enums import LifecycleStatus
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 
 SUITE_SCHEMA_VERSION = "0.2"
 
@@ -78,7 +79,7 @@ class VerificationReport:
 
 
 def run_suite(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     artifact_id: str,
     suite: VerificationSuite,
     *,

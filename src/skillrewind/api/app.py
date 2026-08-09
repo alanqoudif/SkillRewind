@@ -25,7 +25,22 @@ from ..cas.local import LocalCAS
 from ..config import SkillRewindConfig, load_config
 from ..persistence.service.engine import build_engine
 from .ratelimit import RateLimiter
-from .routers import admin, artifacts, bench, candidates, derivations, events, health, jobs, lineage, replay
+from .routers import (
+    admin,
+    artifacts,
+    attestations,
+    bench,
+    candidates,
+    derivations,
+    events,
+    health,
+    jobs,
+    lineage,
+    quarantine,
+    replay,
+    revocations,
+    waivers,
+)
 
 
 def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
@@ -77,10 +92,20 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     # (which matches in registration order) tries the specific suffix routes
     # before the greedy catch-all swallows the suffix into `artifact_id`.
     app.include_router(derivations.router)
+    # quarantine.router and waivers.router both add more specific
+    # `/artifacts/{id}/quarantine` and `/artifacts/{id}/waivers` suffix
+    # routes under the same prefix artifacts.router's catch-all
+    # `/{artifact_id:path}` route also matches -- register them first for the
+    # same reason derivations.router is registered before artifacts.router
+    # above (Starlette matches in registration order).
+    app.include_router(quarantine.router)
+    app.include_router(waivers.router)
     app.include_router(artifacts.router)
     app.include_router(lineage.router)
     app.include_router(candidates.router)
     app.include_router(replay.router)
+    app.include_router(revocations.router)
+    app.include_router(attestations.router)
 
     @app.exception_handler(StarletteHTTPException)
     async def _problem_detail_handler(request, exc: StarletteHTTPException) -> JSONResponse:

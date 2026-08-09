@@ -65,6 +65,13 @@ class SkillRewindConfig:
     cors_allow_origins: str = ""  # comma-separated; empty = no CORS origins allowed
     rate_limit_capacity: int = 60
     rate_limit_refill_per_second: float = 1.0
+    # Service-mode attestation signing (Phase C2.3). The private key is a raw
+    # Ed25519 key file on the server's local filesystem (see
+    # skillrewind.attestation.signing.generate_keypair) -- never accepted in
+    # an API request body, never stored in the database. Empty means signing
+    # is not configured; signing requests then fail closed.
+    attestation_signing_key_path: str = ""
+    attestation_public_key_path: str = ""
 
     @property
     def db_path(self) -> str:
