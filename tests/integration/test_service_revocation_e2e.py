@@ -280,6 +280,59 @@ def test_service_mode_full_revocation_workflow(client, config, full_key):
     assert any(a.successor_artifact_id == successor_id and a.status == "succeeded" for a in rebuild_attempts)
     assert any(v.artifact_id == successor_id and v.status == "pass" for v in verification_reports)
 
+    # -- Phase C2.4 gap A/B: standalone rebuild + verification read APIs --
+    successor_attempt = next(a for a in rebuild_attempts if a.successor_artifact_id == successor_id)
+    rebuild_id = successor_attempt.attempt_id
+    rebuild_detail = client.get(f"/api/v1/rebuilds/{rebuild_id}", headers=_auth(full_key)).json()
+    assert rebuild_detail["status"] == "succeeded"
+    assert rebuild_detail["source_artifact_id"] == descendant_id
+    assert rebuild_detail["output_artifact"]["artifact_id"] == successor_id
+    assert rebuild_detail["revocation_event_id"] == revocation_id
+
+    support = client.get(f"/api/v1/rebuilds/{rebuild_id}/support", headers=_auth(full_key)).json()
+    assert independent_id not in support["clean_support"], "contaminated/unrelated artifact must not be in clean support"
+
+    exclusions = client.get(f"/api/v1/rebuilds/{rebuild_id}/exclusions", headers=_auth(full_key)).json()
+    assert isinstance(exclusions["excluded_support"], list)
+
+    output = client.get(f"/api/v1/rebuilds/{rebuild_id}/output", headers=_auth(full_key)).json()
+    assert output["output_artifact"]["artifact_id"] == successor_id
+
+    rebuild_verification = client.get(f"/api/v1/rebuilds/{rebuild_id}/verification", headers=_auth(full_key)).json()
+    assert rebuild_verification["status"] == "pass"
+    verification_id = rebuild_verification["verification_id"]
+
+    for_revocation = client.get(f"/api/v1/revocations/{revocation_id}/rebuilds", headers=_auth(full_key)).json()
+    assert any(r["rebuild_id"] == rebuild_id for r in for_revocation["rebuilds"])
+
+    verification_detail = client.get(f"/api/v1/verifications/{verification_id}", headers=_auth(full_key)).json()
+    assert verification_detail["status"] == "pass"
+    assert verification_detail["checks"], "verification detail must expose real check results, not a fabricated empty list"
+
+    checks = client.get(f"/api/v1/verifications/{verification_id}/checks", headers=_auth(full_key)).json()["checks"]
+    assert checks == verification_detail["checks"]
+
+    safety = client.get(f"/api/v1/verifications/{verification_id}/safety", headers=_auth(full_key)).json()
+    assert safety["status"] == "pass"
+    assert any(c["check_type"] == "canary-absent" for c in safety["checks"])
+
+    utility = client.get(f"/api/v1/verifications/{verification_id}/utility", headers=_auth(full_key)).json()
+    assert utility["clean_utility_score"] is not None
+
+    integrity = client.get(f"/api/v1/verifications/{verification_id}/integrity", headers=_auth(full_key)).json()
+    assert any(c["check_type"] == "predecessor-closure" for c in integrity["checks"])
+
+    # safety/utility/integrity must never collapse into one opaque boolean --
+    # each carries its own distinct check list.
+    assert {"safety", "utility", "integrity"} == {"safety", "utility", "integrity"}
+    assert safety["checks"] != utility["checks"]
+    assert safety["checks"] != integrity["checks"]
+
+    missing_rebuild = client.get("/api/v1/rebuilds/does-not-exist", headers=_auth(full_key))
+    assert missing_rebuild.status_code == 404
+    missing_verification = client.get("/api/v1/verifications/does-not-exist", headers=_auth(full_key))
+    assert missing_verification.status_code == 404
+
     # -- 37-42: bounded canonical attestation, signed and verified, via public APIs --
     with Session(engine) as session:
         attestation_row = session.execute(select(Attestation).where(Attestation.event_id == revocation_id)).scalar_one()

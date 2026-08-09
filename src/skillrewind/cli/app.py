@@ -663,6 +663,65 @@ def _cmd_service_import(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_openapi_export(args: argparse.Namespace) -> int:
+    """Exports the real, live FastAPI app's OpenAPI document (Phase C2.4
+    section 7) -- never a hand-written stand-in. Requires the ``service``
+    extra (FastAPI/uvicorn) but not a running server or a live database:
+    ``create_app`` only needs a syntactically valid ``database_url`` to
+    build its SQLAlchemy `Engine` object, which is never connected to
+    during schema generation."""
+
+    import skillrewind.jobs.handlers  # noqa: F401  (registers job handlers referenced by route docs)
+
+    from ..api.app import create_app
+    from ..config import SkillRewindConfig
+
+    database_url = args.database_url or "sqlite:///:memory:"
+    app = create_app(SkillRewindConfig(mode="service", database_url=database_url, cas_root=args.cas_root))
+    spec = app.openapi()
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(spec, indent=2, sort_keys=True) + "\n")
+    sys.stderr.write(f"skillrewind openapi-export: wrote {output_path}\n")
+    return 0
+
+
+def _cmd_conformance_describe(args: argparse.Namespace) -> int:
+    from ..conformance import describe
+
+    _write_json(describe(), args.output)
+    return 0
+
+
+def _cmd_conformance_self_test(args: argparse.Namespace) -> int:
+    from pathlib import Path as _Path
+
+    from ..conformance import run_self_test
+
+    report = run_self_test(workdir=_Path(args.workdir) if args.workdir else None)
+    _write_json(report.to_dict(), args.output)
+    if not report.ok:
+        sys.stderr.write("skillrewind conformance self-test: FAILED (see checks[] for detail)\n")
+        return 1
+    return 0
+
+
+def _add_conformance_commands(sub) -> None:
+    conformance = sub.add_parser("conformance", help="Integration-contract conformance commands.")
+    conformance_sub = conformance.add_subparsers(dest="conformance_command", required=True)
+
+    describe_p = conformance_sub.add_parser("describe", help="Print the current contract version and Level 1/2/3 requirements.")
+    describe_p.add_argument("--output")
+    describe_p.set_defaults(func=_cmd_conformance_describe)
+
+    self_test_p = conformance_sub.add_parser(
+        "self-test", help="Run the local Service-mode API against its own stable integration contract."
+    )
+    self_test_p.add_argument("--output")
+    self_test_p.add_argument("--workdir", help="Reuse this directory instead of a fresh temp dir (for inspection).")
+    self_test_p.set_defaults(func=_cmd_conformance_self_test)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="skillrewind",
@@ -816,6 +875,14 @@ def _build_parser() -> argparse.ArgumentParser:
         p.add_argument("--cas-root", required=True),
         p.add_argument("--dry-run", action="store_true"),
     ))
+
+    openapi_export = sub.add_parser("openapi-export", help="Export the live FastAPI app's OpenAPI v1 document to a file.")
+    openapi_export.add_argument("--output", default="docs/openapi-v1.json")
+    openapi_export.add_argument("--database-url", help="Not connected to; only needs to be a syntactically valid URL.")
+    openapi_export.add_argument("--cas-root", default=".skillrewind-openapi-export-cas")
+    openapi_export.set_defaults(func=_cmd_openapi_export)
+
+    _add_conformance_commands(sub)
 
     return parser
 

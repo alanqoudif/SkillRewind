@@ -19,9 +19,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ...cas.base import ContentAddressedStore
-from ...domain.errors import NotFoundError
+from ...domain.errors import CASIntegrityError, NotFoundError
 from ...persistence.service.models import QuarantineEntry, Waiver
 from ...persistence.service.repositories import ArtifactRepository
+from ...quarantine.waivers import SERVING_SCOPES
 from ..auth import request_digest as compute_request_digest
 from ..deps import ProblemDetail, get_cas, get_config, get_session, require_scope
 from ..idempotency import IdempotencyConflict, check, record
@@ -134,6 +135,11 @@ def get_artifact_content(
         content = repo.get_content(artifact_id)
     except NotFoundError as exc:
         raise ProblemDetail(404, "Not Found", str(exc)) from None
+    except CASIntegrityError as exc:
+        # A corrupted or tampered CAS object must never be silently served
+        # as if it were valid content -- see docs/threat-model.md ("CAS
+        # corruption").
+        raise ProblemDetail(500, "Integrity Error", str(exc)) from None
     return Response(
         content=content,
         media_type=artifact.mime_type,
@@ -166,12 +172,15 @@ def resolve_artifact(
 
     now = datetime.now(timezone.utc)
     active_waiver = session.execute(
-        select(Waiver).where(
+        select(Waiver)
+        .where(
             Waiver.artifact_id == artifact_id,
             Waiver.revoked.is_(False),
             (Waiver.expires_at.is_(None)) | (Waiver.expires_at > now),
+            Waiver.scope.in_(SERVING_SCOPES),
         )
-    ).scalar_one_or_none()
+        .order_by(Waiver.created_at.desc())
+    ).scalars().first()
 
     successor_id: Optional[str] = None
     if artifact.status == "superseded" and artifact.superseded_by:

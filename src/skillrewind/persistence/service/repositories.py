@@ -171,9 +171,15 @@ class ArtifactRepository:
         self.session.commit()
 
     def find_by_alias(self, alias: str) -> Optional[Artifact]:
+        """Returns the most recent active-or-quarantined artifact for
+        `alias` -- see `skillrewind.persistence.repositories.
+        ArtifactRepository.find_by_alias` (Lite mode) for the rationale:
+        callers (`ServiceWorkspace.resolve_alias`) own the actual
+        serving-eligibility decision, including dynamic waiver evaluation."""
+
         stmt = (
             select(Artifact)
-            .where(Artifact.alias == alias, Artifact.status == "active")
+            .where(Artifact.alias == alias, Artifact.status.in_(["active", "quarantined"]))
             .order_by(Artifact.created_at.desc())
             .limit(1)
         )

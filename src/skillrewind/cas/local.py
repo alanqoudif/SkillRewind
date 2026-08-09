@@ -103,18 +103,25 @@ class LocalCAS:
         path = self._path_for(digest_hex)
         if not path.is_file():
             raise CASIntegrityError(f"object not found: sha256:{digest_hex}")
-        return path.read_bytes()
+        data = path.read_bytes()
+        if hashlib.sha256(data).hexdigest() != digest_hex:
+            raise CASIntegrityError(f"CAS object corrupted (digest mismatch): sha256:{digest_hex}")
+        return data
 
     def open_stream(self, digest_hex: str) -> Iterator[bytes]:
         path = self._path_for(digest_hex)
         if not path.is_file():
             raise CASIntegrityError(f"object not found: sha256:{digest_hex}")
+        hasher = hashlib.sha256()
         with path.open("rb") as handle:
             while True:
                 chunk = handle.read(_CHUNK)
                 if not chunk:
                     break
+                hasher.update(chunk)
                 yield chunk
+        if hasher.hexdigest() != digest_hex:
+            raise CASIntegrityError(f"CAS object corrupted (digest mismatch): sha256:{digest_hex}")
 
     def metadata(self, digest_hex: str) -> ObjectMetadata:
         path = self._path_for(digest_hex)

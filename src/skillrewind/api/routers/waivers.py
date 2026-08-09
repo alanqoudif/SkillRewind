@@ -50,7 +50,7 @@ def _waiver_to_dict(waiver: Waiver) -> dict[str, Any]:
 class CreateWaiverRequest(BaseModel):
     artifact_id: str
     reason: str = Field(..., min_length=1)
-    scope: str = Field(default="quarantine-release")
+    scope: str = Field(default="serving")
     expires_at: Optional[str] = None  # ISO-8601; required unless caller has `admin` scope
     revocation_event_id: Optional[str] = None
 

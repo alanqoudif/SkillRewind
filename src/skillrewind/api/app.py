@@ -37,8 +37,10 @@ from .routers import (
     jobs,
     lineage,
     quarantine,
+    rebuilds,
     replay,
     revocations,
+    verifications,
     waivers,
 )
 
@@ -106,6 +108,8 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     app.include_router(replay.router)
     app.include_router(revocations.router)
     app.include_router(attestations.router)
+    app.include_router(rebuilds.router)
+    app.include_router(verifications.router)
 
     @app.exception_handler(StarletteHTTPException)
     async def _problem_detail_handler(request, exc: StarletteHTTPException) -> JSONResponse:

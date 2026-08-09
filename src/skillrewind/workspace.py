@@ -131,16 +131,23 @@ class Workspace:
         return artifact
 
     def resolve_alias(self, alias: str) -> Optional[Artifact]:
-        """Serving-resolution lookup: only ever returns an active artifact, never
-        a revoked or quarantined version."""
+        """Serving-resolution lookup: only ever returns a revoked artifact
+        never; returns a quarantined artifact only if it currently has an
+        active, unexpired, unrevoked "serving"-scoped waiver (evaluated
+        dynamically on every call -- see `skillrewind.quarantine.waivers`)."""
 
         artifact = self.artifacts.find_by_alias(alias)
         if artifact is None:
             return None
-        if artifact.status != LifecycleStatus.ACTIVE:
+        if artifact.status == LifecycleStatus.REVOKED:
+            return None
+        if artifact.status not in (LifecycleStatus.ACTIVE, LifecycleStatus.QUARANTINED):
             return None
         if self.revocations.is_quarantined(artifact.artifact_id):
-            return None
+            from .quarantine.waivers import SERVING_SCOPES, has_active_waiver
+
+            if not has_active_waiver(self, artifact.artifact_id, scopes=SERVING_SCOPES):
+                return None
         return artifact
 
     def close(self) -> None:

@@ -90,9 +90,17 @@ class ArtifactRepository:
         return self._row_to_artifact(row)
 
     def find_by_alias(self, alias: str) -> Optional[Artifact]:
+        """Returns the most recent active-or-quarantined artifact for
+        `alias` regardless of quarantine status -- callers (chiefly
+        `Workspace.resolve_alias`) are responsible for the actual
+        serving-eligibility decision, including dynamically evaluating any
+        active waiver on a quarantined artifact. Revoked/superseded
+        artifacts are still excluded here since no waiver can ever make
+        those servable again."""
+
         self._conn.row_factory = sqlite3.Row
         row = self._conn.execute(
-            "SELECT * FROM artifacts WHERE alias = ? AND status = 'active' "
+            "SELECT * FROM artifacts WHERE alias = ? AND status IN ('active', 'quarantined') "
             "ORDER BY created_at DESC LIMIT 1",
             (alias,),
         ).fetchone()

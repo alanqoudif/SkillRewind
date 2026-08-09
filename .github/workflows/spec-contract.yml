@@ -1,0 +1,41 @@
+name: Specification Contract
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen
+
+      - name: Generate OpenAPI
+        run: make openapi
+
+      - name: Verify generated contract is committed
+        run: git diff --exit-code docs/openapi-v1.json
+
+      - name: Conformance self-test
+        run: make conformance-self-test
+
+      - name: Spec tests
+        run: uv run pytest tests/spec tests/conformance -q
