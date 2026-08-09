@@ -14,6 +14,8 @@ All notable changes to this project are documented here. Format loosely follows 
 - `skillrewind.jobs`: durable database-backed job queue (enqueue/claim/lease/heartbeat/retry-backoff/cancellation/lease-expiry-recovery/persisted progress events), `Worker` loop, and `worker-run`/`worker-once`/`jobs-list`/`jobs-show`/`jobs-cancel`/`jobs-retry`/`jobs-reap-expired`/`jobs-enqueue` CLI commands. One real handler (`benchmark.run`) wraps the existing RewindBench CLI pipeline and is proven idempotent under simulated worker crash/restart.
 - `docs/adr/0010-job-handler-scope.md` documents why revocation/replay/rebuild/verification/attestation handlers are not wired yet.
 - 27 new tests (`tests/unit/test_jobs.py`, `tests/integration/test_benchmark_job_handler.py`).
+- `skillrewind.api` + `skillrewind serve`: a real, running FastAPI Service-mode API. Health/readiness (fails 503 before migration or with auth disabled in service mode), API-key admin with Argon2id hashing and scopes, `Idempotency-Key` support, an SSE event stream with `Last-Event-ID` resume, an in-memory rate limiter, CORS-off-by-default, and job/bench endpoints over the real Phase B queue. `fastapi`, `uvicorn`, `argon2-cffi`, `sse-starlette`, `httpx` added to the `service` extra.
+- 28 new tests (`tests/integration/test_api.py`), including one that caught and fixed a real auth bug (key secrets containing `_` failed to parse).
 
 ## [0.2.0] — Research Preview
 

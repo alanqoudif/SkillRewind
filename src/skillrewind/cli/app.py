@@ -2,11 +2,11 @@
 
 Preserves the v0.1 ``closure``/``attest --edges`` recorded-only commands
 (see :mod:`skillrewind.cli.legacy`, invoked here as a fallback for those two
-subcommands) and adds the v0.2 workspace-backed command families. ``worker``
-and ``jobs`` are real (Phase B, backed by ``skillrewind.jobs``) when the
-``service`` extra is installed and ``database_url`` is configured; ``serve``
-(the HTTP API, Phase C) is not implemented yet and prints a clear "not
-implemented" message -- see ``STATUS.md``.
+subcommands) and adds the v0.2 workspace-backed command families. ``worker``,
+``jobs``, and ``serve`` are real (Phases B/C, backed by ``skillrewind.jobs``
+and ``skillrewind.api``) when the ``service`` extra is installed and
+``database_url`` is configured -- see ``STATUS.md`` for exactly which API
+endpoints exist.
 """
 
 from __future__ import annotations
@@ -40,10 +40,6 @@ from ..replay.service import run_paired_replay
 from ..revocation.service import request_revocation, run_revocation
 from ..verification.suites import DEFAULT_POISONED_DESCENDANT_SUITE, run_suite
 from ..workspace import Workspace
-
-NOT_IMPLEMENTED = {
-    "serve": "HTTP API service mode is not implemented yet (Phase C; see docs/completion-matrix-v0.3.md).",
-}
 
 
 def _write_json(value: Any, output: Optional[str]) -> None:
@@ -635,12 +631,26 @@ def _cmd_attest_legacy(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_not_implemented(name: str):
-    def handler(args: argparse.Namespace) -> int:
-        sys.stderr.write(f"skillrewind {name}: not implemented in this session. {NOT_IMPLEMENTED[name]}\n")
-        return 3
+def _cmd_serve(args: argparse.Namespace) -> int:
+    from ..config import load_config
 
-    return handler
+    config = load_config(overrides={"database_url": getattr(args, "database_url", None)})
+    if not config.database_url:
+        sys.stderr.write(
+            "skillrewind serve: no database_url configured. Pass --database-url, set "
+            "SKILLREWIND_DATABASE_URL, or set database_url in skillrewind.toml.\n"
+        )
+        return 3
+    try:
+        import uvicorn
+
+        from ..api.app import create_app
+    except ModuleNotFoundError as exc:
+        sys.stderr.write(f"skillrewind serve: service extra not installed ({exc}). Run: pip install 'skillrewind[service]'\n")
+        return 3
+    app = create_app(config)
+    uvicorn.run(app, host=args.host, port=args.port)
+    return 0
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -661,7 +671,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     add("init", _cmd_init, "Initialize a SkillRewind workspace.")
     add("doctor", _cmd_doctor, "Validate configuration, storage, and audit chain health.")
-    add("serve", _cmd_not_implemented("serve"), "(serve is not implemented yet -- Phase C)")
+    add("serve", _cmd_serve, "Run the Service-mode HTTP API (health/jobs/bench/admin; see STATUS.md for scope).", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("--host", default="127.0.0.1"),
+        p.add_argument("--port", type=int, default=8000),
+    ))
 
     def _worker_args(p: argparse.ArgumentParser) -> None:
         p.add_argument("--database-url", help="Overrides SKILLREWIND_DATABASE_URL / skillrewind.toml.")

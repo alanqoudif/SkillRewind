@@ -24,8 +24,13 @@ Requires-Dist: ruff>=0.6; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
 Provides-Extra: service
 Requires-Dist: alembic>=1.13; extra == "service"
+Requires-Dist: argon2-cffi>=23.1; extra == "service"
+Requires-Dist: fastapi>=0.110; extra == "service"
+Requires-Dist: httpx>=0.27; extra == "service"
 Requires-Dist: psycopg[binary]>=3.1; extra == "service"
 Requires-Dist: sqlalchemy>=2.0; extra == "service"
+Requires-Dist: sse-starlette>=2.0; extra == "service"
+Requires-Dist: uvicorn>=0.29; extra == "service"
 Dynamic: license-file
 
 # SkillRewind

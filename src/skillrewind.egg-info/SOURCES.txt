@@ -55,6 +55,12 @@ src/skillrewind/features/operational.py
 src/skillrewind/features/temporal.py
 src/skillrewind/inference/__init__.py
 src/skillrewind/inference/scoring.py
+src/skillrewind/jobs/__init__.py
+src/skillrewind/jobs/clock.py
+src/skillrewind/jobs/errors.py
+src/skillrewind/jobs/handlers.py
+src/skillrewind/jobs/queue.py
+src/skillrewind/jobs/worker.py
 src/skillrewind/lineage/__init__.py
 src/skillrewind/lineage/candidates.py
 src/skillrewind/lineage/closure.py
@@ -63,6 +69,9 @@ src/skillrewind/lineage/neighborhoods.py
 src/skillrewind/persistence/__init__.py
 src/skillrewind/persistence/database.py
 src/skillrewind/persistence/repositories.py
+src/skillrewind/persistence/service/__init__.py
+src/skillrewind/persistence/service/engine.py
+src/skillrewind/persistence/service/models.py
 src/skillrewind/quarantine/__init__.py
 src/skillrewind/quarantine/service.py
 src/skillrewind/quarantine/waivers.py

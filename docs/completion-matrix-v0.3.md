@@ -55,8 +55,19 @@ Legend: `complete` / `partial` / `missing` / `blocked-by-environment` / `intenti
 ### API (Phase C)
 | Requirement | Status | Evidence |
 |---|---|---|
-| FastAPI app, `/api/v1/*` | missing | no `fastapi`/`uvicorn` dependency; no `api/` package |
-| API-key auth, idempotency, SSE | missing | none of the above exist |
+| FastAPI app factory, `skillrewind serve` | complete | `src/skillrewind/api/app.py`; boots a real uvicorn server, manually verified with live curl requests |
+| `/health/live`, `/health/ready` (schema + auth-safety checks) | complete | tested incl. 503 before migration and when `api_auth_disabled` is true in Service mode |
+| `/version`, `/openapi.json`, `/api/v1/schemas/{name}` (path-traversal-safe) | complete | tested |
+| API-key auth: create/list/revoke, Argon2id hash, scopes, prefix lookup | complete | `src/skillrewind/api/auth.py`; a real bug was found and fixed during testing (naive `split("_")` broke on `token_urlsafe` secrets containing `_`) |
+| Scope enforcement matrix | complete | tested: insufficient scope -> 403, admin-only endpoints, `admin` implies all scopes |
+| Idempotency-Key: replay + conflict | complete | `src/skillrewind/api/idempotency.py`, tested both paths |
+| Pagination, RFC-9457-shaped error envelope | complete | tested |
+| SSE `/api/v1/events/stream` with `Last-Event-ID` resume | complete | polls the real `job_events` table; tested ordering and no-duplicate-on-resume |
+| Rate limiting (in-memory, single-instance, honestly documented as such) | complete | global middleware; tested 429 + `Retry-After` |
+| CORS disabled by default, allowlist-only when configured | complete | tested both states |
+| `POST /api/v1/bench/runs` + `GET .../jobs`, `.../jobs/{id}[/cancel\|/retry]` | complete | real endpoints over the Phase B job queue; full lifecycle tested through API -> worker -> API |
+| Artifact/derivation/edge/lineage/candidate/replay/revocation/quarantine/waiver/rebuild/verification/attestation endpoints (spec 8.2) | missing (deliberate) | the Service-mode SQLAlchemy tables for these (Phase A) have no writer yet -- shipping endpoints that always return empty results was assessed as violating the "no fake UI" rule; see `src/skillrewind/api/app.py` module docstring |
+| WebSocket transport | intentionally-out-of-scope | spec 8.7 states SSE is sufficient, WebSockets unnecessary |
 
 ### Web dashboard (Phase D)
 | Requirement | Status | Evidence |
