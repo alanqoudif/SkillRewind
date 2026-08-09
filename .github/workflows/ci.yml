@@ -42,8 +42,13 @@ jobs:
         with:
           enable-cache: true
 
+      # --locked (not --frozen) fails the build if uv.lock is out of date
+      # relative to pyproject.toml, and --all-extras installs both the
+      # `dev` group (ruff/mypy/pytest/hypothesis) and the `service` group
+      # (fastapi/sqlalchemy/alembic/psycopg/uvicorn/argon2-cffi/...) --
+      # every step below needs one or both.
       - name: Sync dependencies
-        run: uv sync --frozen
+        run: uv sync --locked --all-extras
 
       - name: Ruff
         run: uv run ruff check src tests examples migrations

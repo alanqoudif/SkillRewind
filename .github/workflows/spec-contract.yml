@@ -26,7 +26,10 @@ jobs:
         with:
           enable-cache: true
 
-      - run: uv sync --frozen
+      # --locked (not --frozen) fails the build if uv.lock is out of date,
+      # and --all-extras installs the `service` group this contract surface
+      # (FastAPI app construction, conformance self-test) needs.
+      - run: uv sync --locked --all-extras
 
       - name: Generate OpenAPI
         run: make openapi
@@ -37,5 +40,17 @@ jobs:
       - name: Conformance self-test
         run: make conformance-self-test
 
-      - name: Spec tests
-        run: uv run pytest tests/spec tests/conformance -q
+      # docs/openapi-v1.json is also checked for staleness by a dedicated
+      # pytest (tests/unit/test_openapi_not_stale.py), which regenerates the
+      # live app's OpenAPI document in-process and diffs it -- run it here
+      # too as a second, independent check.
+      # NOTE: there is no tests/spec/ or tests/conformance/ directory in
+      # this repository as of v0.3.0a1 -- the SkillRewind Specification's
+      # own normative test suite has not been built yet (see
+      # docs/release-readiness-v0.3.md, "conformance (external)": not
+      # started). Referencing those paths here would either error on a
+      # missing path or (if created empty) be a meaningless placeholder;
+      # this workflow instead runs the real, existing contract-validation
+      # commands above and the openapi-staleness check below.
+      - name: OpenAPI staleness check (pytest)
+        run: make openapi-check
