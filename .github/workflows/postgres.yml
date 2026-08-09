@@ -62,8 +62,9 @@ jobs:
 
       - name: Fail if the PostgreSQL-gated tests were skipped
         run: |
-          uv run pytest tests/integration/test_service_persistence.py::test_postgres_migration_and_schema_current \
-            tests/integration/test_service_replay_job_handler.py -k postgres \
+          uv run pytest \
+            tests/integration/test_service_persistence.py::test_postgres_migration_and_schema_current \
+            tests/integration/test_service_replay_job_handler.py::test_postgres_concurrent_replay_job_claims_are_mutually_exclusive \
             -v -rs --no-header | tee /tmp/postgres-gated.log
           if grep -q "SKIPPED" /tmp/postgres-gated.log; then
             echo "::error::PostgreSQL-gated test(s) were skipped in CI, where SKILLREWIND_TEST_POSTGRES_URL is configured and psycopg is installed. This must never skip in this workflow -- see .github/workflows/postgres.yml."
