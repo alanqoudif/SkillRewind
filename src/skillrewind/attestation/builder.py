@@ -15,12 +15,12 @@ from typing import Any
 from .. import __version__
 from ..canonical.json import sha256_hex
 from ..domain.models import RevocationEvent
-from ..workspace import Workspace
+from ..workspace_protocol import WorkspaceLike
 
 ATTESTATION_SCHEMA_VERSION = "0.2"
 
 
-def _config_digest(workspace: Workspace) -> str:
+def _config_digest(workspace: WorkspaceLike) -> str:
     cfg = workspace.config
     return sha256_hex(
         {
@@ -32,7 +32,7 @@ def _config_digest(workspace: Workspace) -> str:
     )
 
 
-def build_attestation(workspace: Workspace, event: RevocationEvent) -> dict[str, Any]:
+def build_attestation(workspace: WorkspaceLike, event: RevocationEvent) -> dict[str, Any]:
     replay_calls = sum(
         d.get("replay") == "executed" for d in event.replay_decisions
     ) * 2

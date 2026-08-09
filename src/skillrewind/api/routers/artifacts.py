@@ -53,6 +53,7 @@ async def ingest_artifact(
     logical_name: str = Query(...),
     mime_type: str = Query(default="application/octet-stream"),
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
+    x_metadata: Optional[str] = Header(default=None, alias="X-Metadata"),
     session: Session = Depends(get_session),
     cas: ContentAddressedStore = Depends(get_cas),
     config=Depends(get_config),
@@ -61,6 +62,19 @@ async def ingest_artifact(
     content = await request.body()
     if len(content) > config.max_object_bytes:
         raise ProblemDetail(413, "Payload Too Large", f"content exceeds max_object_bytes={config.max_object_bytes}")
+
+    metadata: Optional[dict[str, Any]] = None
+    if x_metadata is not None:
+        if len(x_metadata.encode("utf-8")) > _MAX_INLINE_METADATA_BYTES:
+            raise ProblemDetail(413, "Payload Too Large", f"X-Metadata exceeds {_MAX_INLINE_METADATA_BYTES} bytes")
+        try:
+            import json as _json
+
+            metadata = _json.loads(x_metadata)
+        except ValueError as exc:
+            raise ProblemDetail(422, "Unprocessable Entity", f"X-Metadata is not valid JSON: {exc}") from None
+        if not isinstance(metadata, dict):
+            raise ProblemDetail(422, "Unprocessable Entity", "X-Metadata must be a JSON object")
 
     actor = auth.actor if auth is not None else "dev-mode"
     digest = compute_request_digest("POST", f"/api/v1/artifacts?kind={kind}&logical_name={logical_name}", content)
@@ -79,7 +93,7 @@ async def ingest_artifact(
 
     repo = ArtifactRepository(session, cas)
     try:
-        artifact = repo.ingest(content, kind=kind, logical_name=logical_name, mime_type=mime_type, creator=actor)
+        artifact = repo.ingest(content, kind=kind, logical_name=logical_name, mime_type=mime_type, creator=actor, metadata=metadata)
     except ValueError as exc:
         raise ProblemDetail(422, "Unprocessable Entity", str(exc)) from None
 
@@ -186,6 +200,12 @@ def resolve_artifact(
         evidence = f"active waiver {active_waiver.waiver_id!r}: {active_waiver.reason}"
     elif artifact.status == "revoked":
         resolution, policy, evidence = "revoked", "default-deny-revoked", "artifact.status == revoked"
+    elif artifact.status == "superseded":
+        # Checked before the quarantine branch below: a superseded artifact's
+        # own quarantine-entry history is preserved (never deleted -- master
+        # spec section 8) but is no longer the *active* reason this artifact
+        # is unavailable; supersession is the more specific, terminal fact.
+        resolution, policy, evidence = "superseded", "default-deny-superseded", "artifact.status == superseded"
     elif artifact.status == "quarantined" or quarantine is not None:
         resolution = "quarantined"
         policy = "default-deny-quarantined"
@@ -194,8 +214,6 @@ def resolve_artifact(
             if quarantine is not None
             else "artifact.status == quarantined"
         )
-    elif artifact.status == "superseded":
-        resolution, policy, evidence = "superseded", "default-deny-superseded", "artifact.status == superseded"
     else:
         resolution, policy, evidence = "unavailable", "default-deny-unknown-status", f"artifact.status == {artifact.status!r}"
 

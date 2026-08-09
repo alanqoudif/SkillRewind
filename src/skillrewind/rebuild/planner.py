@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from ..domain.enums import EvidenceClass, LifecycleStatus
 from ..domain.errors import NotFoundError
-from ..workspace import Workspace
+from ..workspace_protocol import WorkspaceLike
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +31,7 @@ class RebuildPlan:
         }
 
 
-def plan_rebuild(workspace: Workspace, artifact_id: str) -> RebuildPlan:
+def plan_rebuild(workspace: WorkspaceLike, artifact_id: str) -> RebuildPlan:
     derivation = workspace.derivations.find_by_target(artifact_id)
     if derivation is None:
         raise NotFoundError(f"no derivation recorded for artifact {artifact_id}; cannot plan a rebuild")

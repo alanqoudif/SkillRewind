@@ -6,27 +6,32 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
+from ..canonical.json import sha256_hex
 from ..config import SkillRewindConfig
-from ..domain.enums import RevocationPolicy, RevocationState, Severity
+from ..domain.enums import EvidenceClass, LifecycleStatus, RelationType, RevocationPolicy, RevocationState, Severity
 from ..domain.errors import NotFoundError
 from ..domain.models import RevocationEvent
 from ..lineage.candidates import recover_candidates
 from ..lineage.closure import recorded_descendants
 from ..quarantine.service import quarantine_artifact
+from ..rebuild.planner import plan_rebuild
 from ..rebuild.service import publish_successor, rebuild_artifact
 from ..replay.selector import Budget, ReplayCandidate, select_active, select_exhaustive
 from ..replay.service import run_paired_replay
 from ..verification.suites import VerificationSuite, run_suite
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 from .barrier import apply_barrier
 from .decisions import should_quarantine_unresolved
 from .state_machine import transition
 
+PREVIEW_POLICY_VERSION = "0.1"
+
 
 def request_revocation(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     *,
     roots: list[str],
     reason: str,
@@ -71,6 +76,230 @@ def request_revocation(
     return event
 
 
+@dataclass(frozen=True, slots=True)
+class RevocationPreview:
+    """Side-effect-free preview of what a revocation *would* do (master spec
+    Phase C2.3 section 5). Computing this never writes artifact status,
+    quarantine, evidence, or successor state -- it only reads the already-
+    recorded closure and already-existing evidence edges."""
+
+    roots: list[str]
+    policy: RevocationPolicy
+    policy_version: str
+    recorded_descendants: list[str]
+    replay_confirmed: list[dict]
+    replay_rejected: list[dict]
+    unresolved: list[dict]
+    inferred_excluded: list[dict]
+    already_revoked_or_quarantined: list[str]
+    proposed_targets: list[dict]
+    rebuild_available: dict[str, bool]
+    unresolved_uncertainty: list[str]
+    estimated_operation_counts: dict[str, int]
+    preview_digest: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "roots": self.roots,
+            "policy": self.policy.value,
+            "policy_version": self.policy_version,
+            "recorded_descendants": self.recorded_descendants,
+            "replay_confirmed": self.replay_confirmed,
+            "replay_rejected": self.replay_rejected,
+            "unresolved": self.unresolved,
+            "inferred_excluded": self.inferred_excluded,
+            "already_revoked_or_quarantined": self.already_revoked_or_quarantined,
+            "proposed_targets": self.proposed_targets,
+            "rebuild_available": self.rebuild_available,
+            "unresolved_uncertainty": self.unresolved_uncertainty,
+            "estimated_operation_counts": self.estimated_operation_counts,
+            "preview_digest": self.preview_digest,
+        }
+
+
+def build_revocation_preview(
+    workspace: WorkspaceLike,
+    *,
+    roots: list[str],
+    policy: RevocationPolicy,
+    manual_targets: Optional[list[dict]] = None,
+) -> RevocationPreview:
+    """Computes (never persists) the preview of a revocation over `roots`
+    under `policy`.
+
+    Reads only already-recorded closure (`recorded_descendants`) and
+    already-existing `hidden-influence` evidence edges -- it never calls
+    `recover_candidates(..., persist=True)`, never runs replay, never writes
+    artifact status/quarantine/successor state. Two calls against the same
+    evidence snapshot with the same roots/policy/manual targets always
+    produce the same `preview_digest` (deterministic policy digest,
+    section 4).
+    """
+
+    roots = sorted(set(roots))
+    manual_targets = manual_targets or []
+    recorded = list(recorded_descendants(workspace, roots, include_roots=True))
+
+    replay_confirmed: list[dict] = []
+    replay_rejected: list[dict] = []
+    unresolved: list[dict] = []
+    inferred_excluded: list[dict] = []
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for member in recorded:
+        # Hidden-influence edges are recorded ancestor(root) -> descendant, so
+        # a closure member's *outgoing* hidden-influence edges are what
+        # points at replay-confirmed/inferred/rejected/unresolved candidates
+        # -- never `incoming`, which would look for edges pointing *at* the
+        # root itself.
+        for edge in workspace.edges.outgoing(member):
+            if edge.relation != RelationType.HIDDEN_INFLUENCE:
+                continue
+            pair = (edge.source, edge.target)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            entry = {
+                "source": edge.source,
+                "target": edge.target,
+                "evidence_class": edge.evidence_class.value,
+                "confidence": edge.confidence,
+            }
+            if edge.evidence_class == EvidenceClass.REPLAY_CONFIRMED:
+                replay_confirmed.append(entry)
+            elif edge.evidence_class == EvidenceClass.REJECTED:
+                replay_rejected.append(entry)
+            elif edge.evidence_class == EvidenceClass.UNRESOLVED:
+                unresolved.append(entry)
+            elif edge.evidence_class == EvidenceClass.INFERRED:
+                inferred_excluded.append(entry)
+
+    already_revoked_or_quarantined = []
+    for artifact_id in recorded:
+        try:
+            artifact = workspace.artifacts.get(artifact_id)
+        except NotFoundError:
+            continue
+        if artifact.status in (LifecycleStatus.REVOKED, LifecycleStatus.QUARANTINED) or workspace.revocations.is_quarantined(
+            artifact_id
+        ):
+            already_revoked_or_quarantined.append(artifact_id)
+
+    proposed: list[dict] = []
+    proposed_ids: set[str] = set()
+    for root in roots:
+        proposed.append({"artifact_id": root, "action": "revoke", "evidence_class": "recorded", "reason": "explicitly revoked root"})
+        proposed_ids.add(root)
+    for member in recorded:
+        if member in proposed_ids:
+            continue
+        proposed.append(
+            {"artifact_id": member, "action": "quarantine", "evidence_class": "recorded", "reason": "recorded descendant of revoked root"}
+        )
+        proposed_ids.add(member)
+
+    if policy != RevocationPolicy.FORENSIC:
+        for entry in replay_confirmed:
+            target = entry["target"]
+            if target in proposed_ids:
+                continue
+            proposed.append(
+                {
+                    "artifact_id": target,
+                    "action": "quarantine",
+                    "evidence_class": "replay-confirmed",
+                    "reason": f"replay-confirmed hidden influence from {entry['source']}",
+                }
+            )
+            proposed_ids.add(target)
+
+    if policy == RevocationPolicy.STRICT:
+        for entry in unresolved:
+            target = entry["target"]
+            if target in proposed_ids:
+                continue
+            proposed.append(
+                {
+                    "artifact_id": target,
+                    "action": "manual-review",
+                    "evidence_class": "unresolved",
+                    "reason": "strict policy: unresolved candidate flagged for manual review, not auto-quarantined",
+                }
+            )
+            proposed_ids.add(target)
+
+    for manual in manual_targets:
+        target = manual.get("artifact_id")
+        if not target or target in proposed_ids:
+            continue
+        proposed.append(
+            {
+                "artifact_id": target,
+                "action": manual.get("action", "manual-review"),
+                "evidence_class": "manual",
+                "reason": manual.get("reason", "explicit manual target override"),
+            }
+        )
+        proposed_ids.add(target)
+
+    rebuild_available: dict[str, bool] = {}
+    for entry in proposed:
+        target = entry["artifact_id"]
+        if entry["action"] not in ("quarantine", "rebuild-candidate"):
+            continue
+        try:
+            plan_rebuild(workspace, target)
+            rebuild_available[target] = True
+        except (NotFoundError, ValueError):
+            rebuild_available[target] = False
+            entry["proposed_action_note"] = "no clean-room rebuild recipe available"
+
+    unresolved_uncertainty = [
+        f"{u['source']} -> {u['target']}: replay outcome unresolved, not treated as confirmation" for u in unresolved
+    ]
+    if inferred_excluded and policy != RevocationPolicy.STRICT:
+        unresolved_uncertainty.append(
+            f"{len(inferred_excluded)} inferred (non-replay-confirmed) candidate(s) exist for this closure and "
+            "were NOT included in the proposed target set under this policy."
+        )
+
+    estimated_operation_counts = {
+        "recorded_descendants": len(recorded),
+        "proposed_targets": len(proposed),
+        "quarantine_operations": sum(1 for p in proposed if p["action"] == "quarantine"),
+        "revoke_operations": sum(1 for p in proposed if p["action"] == "revoke"),
+        "rebuild_candidates": sum(1 for v in rebuild_available.values() if v),
+        "manual_review_items": sum(1 for p in proposed if p["action"] == "manual-review"),
+    }
+
+    digest_input = {
+        "roots": roots,
+        "policy": policy.value,
+        "policy_version": PREVIEW_POLICY_VERSION,
+        "recorded_descendants": recorded,
+        "replay_confirmed": sorted(replay_confirmed, key=lambda e: (e["source"], e["target"])),
+        "proposed_targets": sorted(({k: v for k, v in p.items() if k != "proposed_action_note"} for p in proposed), key=lambda e: str(e["artifact_id"])),
+    }
+    preview_digest = sha256_hex(digest_input)
+
+    return RevocationPreview(
+        roots=roots,
+        policy=policy,
+        policy_version=PREVIEW_POLICY_VERSION,
+        recorded_descendants=recorded,
+        replay_confirmed=replay_confirmed,
+        replay_rejected=replay_rejected,
+        unresolved=unresolved,
+        inferred_excluded=inferred_excluded,
+        already_revoked_or_quarantined=already_revoked_or_quarantined,
+        proposed_targets=proposed,
+        rebuild_available=rebuild_available,
+        unresolved_uncertainty=unresolved_uncertainty,
+        estimated_operation_counts=estimated_operation_counts,
+        preview_digest=preview_digest,
+    )
+
+
 @dataclass
 class RevocationRunResult:
     event: RevocationEvent
@@ -100,7 +329,7 @@ _TERMINAL_STATES = (
 )
 
 
-def _advance(workspace: Workspace, event: RevocationEvent, to_state: RevocationState) -> RevocationEvent:
+def _advance(workspace: WorkspaceLike, event: RevocationEvent, to_state: RevocationState) -> RevocationEvent:
     """Transition to `to_state` unless the event has already reached or passed
     it (a resumed call re-walking the same code path from the top)."""
 
@@ -114,7 +343,7 @@ def _advance(workspace: Workspace, event: RevocationEvent, to_state: RevocationS
 
 
 def run_revocation(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     event: RevocationEvent,
     *,
     config: Optional[SkillRewindConfig] = None,
@@ -225,8 +454,13 @@ def run_revocation(
     for target in sorted(confirmed_targets):
         if target in event.quarantined:
             continue  # already quarantined in a prior attempt
-        if not is_forensic:
-            quarantine_artifact(workspace, target, revocation_event_id=event.event_id, reason="replay-confirmed hidden descendant")
+        if is_forensic:
+            # Forensic mode makes no serving-state change at all: `quarantine_artifact`
+            # is never called, and `event.quarantined` -- which is meant to reflect
+            # artifacts actually placed into quarantine -- must not silently claim
+            # otherwise. The confirmed finding is still visible via `replay_decisions`.
+            continue
+        quarantine_artifact(workspace, target, revocation_event_id=event.event_id, reason="replay-confirmed hidden descendant")
         event.quarantined.append(target)
         workspace.revocations.update(event)
     for candidate in unresolved_targets:

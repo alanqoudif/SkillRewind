@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from ..workspace import Workspace
+from ..workspace_protocol import WorkspaceLike
 from .graph import LineageGraph
 
 
-def build_graph(workspace: Workspace) -> LineageGraph:
+def build_graph(workspace: WorkspaceLike) -> LineageGraph:
     """Build the graph used for *recorded* closure/ancestry: only edges with
     ``evidence_class == "recorded"`` are included. Inferred, replay-confirmed,
     rejected, or unresolved edges must never silently expand what counts as
@@ -22,12 +22,12 @@ def build_graph(workspace: Workspace) -> LineageGraph:
 
 
 def recorded_descendants(
-    workspace: Workspace, roots: Sequence[str], *, include_roots: bool = True
+    workspace: WorkspaceLike, roots: Sequence[str], *, include_roots: bool = True
 ) -> tuple[str, ...]:
     return build_graph(workspace).descendants(roots, include_roots=include_roots)
 
 
 def recorded_ancestors(
-    workspace: Workspace, roots: Sequence[str], *, include_roots: bool = True
+    workspace: WorkspaceLike, roots: Sequence[str], *, include_roots: bool = True
 ) -> tuple[str, ...]:
     return build_graph(workspace).ancestors(roots, include_roots=include_roots)

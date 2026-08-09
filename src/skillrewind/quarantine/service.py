@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from ..domain.enums import LifecycleStatus
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 
 
-def quarantine_artifact(workspace: Workspace, artifact_id: str, *, revocation_event_id: str, reason: str) -> None:
+def quarantine_artifact(workspace: WorkspaceLike, artifact_id: str, *, revocation_event_id: str, reason: str) -> None:
     now = timestamp()
     workspace.revocations.add_quarantine(artifact_id, revocation_event_id, reason, now)
     workspace.artifacts.set_status(artifact_id, LifecycleStatus.QUARANTINED)
@@ -17,7 +18,7 @@ def quarantine_artifact(workspace: Workspace, artifact_id: str, *, revocation_ev
     )
 
 
-def release_quarantine(workspace: Workspace, artifact_id: str, *, actor: str, reason: str) -> None:
+def release_quarantine(workspace: WorkspaceLike, artifact_id: str, *, actor: str, reason: str) -> None:
     """Release quarantine only via an explicit, audited action (waiver or clean successor)."""
 
     workspace.revocations.remove_quarantine(artifact_id)
@@ -27,5 +28,5 @@ def release_quarantine(workspace: Workspace, artifact_id: str, *, actor: str, re
     )
 
 
-def list_quarantine(workspace: Workspace) -> list[dict]:
+def list_quarantine(workspace: WorkspaceLike) -> list[dict]:
     return workspace.revocations.list_quarantine()

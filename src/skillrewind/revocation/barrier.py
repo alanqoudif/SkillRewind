@@ -8,10 +8,11 @@ from __future__ import annotations
 from ..domain.enums import LifecycleStatus, RevocationPolicy
 from ..domain.models import RevocationEvent
 from ..lineage.closure import recorded_descendants
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 
 
-def apply_barrier(workspace: Workspace, event: RevocationEvent) -> list[str]:
+def apply_barrier(workspace: WorkspaceLike, event: RevocationEvent) -> list[str]:
     """Mark roots revoked and recorded descendants quarantined.
 
     Each artifact-status/quarantine write commits individually (the

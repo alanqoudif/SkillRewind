@@ -112,6 +112,16 @@ class ArtifactRepository:
         row = self.get(artifact_id)
         return self.cas.get_bytes(row.digest_hex)
 
+    def list_unbounded(self, *, limit: int = 10_000) -> list[Artifact]:
+        """Full scan up to `limit`, oldest first -- used internally by
+        candidate-recovery neighborhood construction (Phase C2.3), which
+        needs to consider the whole artifact population rather than a
+        paginated page. Never exposed directly over the API (`list()`'s
+        500-row page cap remains the only externally reachable listing)."""
+
+        stmt = select(Artifact).order_by(Artifact.created_at.asc(), Artifact.artifact_id.asc()).limit(limit)
+        return list(self.session.execute(stmt).scalars())
+
     def list(self, *, limit: int = 50, cursor: Optional[str] = None, kind: Optional[str] = None) -> list[Artifact]:
         """Keyset-paginated listing, newest first. `cursor` is an opaque
         `"<iso-created_at>|<artifact_id>"` token from a previous page's last
@@ -138,9 +148,55 @@ class ArtifactRepository:
     def cursor_for(artifact: Artifact) -> str:
         return f"{artifact.created_at.isoformat()}|{artifact.artifact_id}"
 
+    def set_status(self, artifact_id: str, status: str) -> None:
+        row = self.get(artifact_id)
+        row.status = status
+        self.session.commit()
+
+    def set_alias(self, artifact_id: str, alias: str) -> None:
+        row = self.get(artifact_id)
+        row.alias = alias
+        self.session.commit()
+
+    def clear_alias(self, alias: str) -> None:
+        stmt = select(Artifact).where(Artifact.alias == alias)
+        for row in self.session.execute(stmt).scalars():
+            row.alias = None
+        self.session.commit()
+
+    def set_superseded_by(self, artifact_id: str, successor_id: str) -> None:
+        row = self.get(artifact_id)
+        row.status = "superseded"
+        row.superseded_by = successor_id
+        self.session.commit()
+
+    def find_by_alias(self, alias: str) -> Optional[Artifact]:
+        stmt = (
+            select(Artifact)
+            .where(Artifact.alias == alias, Artifact.status == "active")
+            .order_by(Artifact.created_at.desc())
+            .limit(1)
+        )
+        return self.session.execute(stmt).scalars().first()
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _parse_ts(value: Optional[str]) -> Optional[datetime]:
+    """Parses a Lite-style `"YYYY-MM-DDTHH:MM:SSZ"` or ISO timestamp string
+    into an aware UTC `datetime`. Returns None for None/empty input rather
+    than raising -- several Lite-mode domain dataclasses carry optional
+    string timestamps."""
+
+    if not value:
+        return None
+    text = value[:-1] + "+00:00" if value.endswith("Z") else value
+    dt = datetime.fromisoformat(text)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def record_audit_event(
@@ -429,6 +485,7 @@ class DerivationRepository:
 
 
 def _to_domain_edge(row: InfluenceEdge) -> InfluenceEdgeDomain:
+    payload = row.payload_json or {}
     return InfluenceEdgeDomain(
         source=row.source,
         target=row.target,
@@ -436,6 +493,8 @@ def _to_domain_edge(row: InfluenceEdge) -> InfluenceEdgeDomain:
         evidence_class=EvidenceClass(row.evidence_class),
         status=row.status,
         confidence=row.confidence,
+        evidence=list(payload.get("evidence", [])),
+        intervention=payload.get("intervention"),
         created_at=row.created_at.isoformat() if row.created_at else None,
         updated_at=row.updated_at.isoformat() if row.updated_at else None,
         scorer_version=row.scorer_version,
@@ -553,6 +612,67 @@ class LineageRepository:
         if result is None:
             return None
         return {"nodes": list(result.nodes), "edges": [e.to_dict() for e in result.edges]}
+
+    def incoming(self, target: str) -> list[InfluenceEdgeDomain]:
+        stmt = select(InfluenceEdge).where(InfluenceEdge.target == target).order_by(InfluenceEdge.source.asc())
+        return [_to_domain_edge(r) for r in self.session.execute(stmt).scalars()]
+
+    def outgoing(self, source: str) -> list[InfluenceEdgeDomain]:
+        stmt = select(InfluenceEdge).where(InfluenceEdge.source == source).order_by(InfluenceEdge.target.asc())
+        return [_to_domain_edge(r) for r in self.session.execute(stmt).scalars()]
+
+    def upsert(self, edge: InfluenceEdgeDomain) -> None:
+        """Insert-or-update by the `(source, target, relation)` unique triple --
+        the same semantics as Lite mode's `edges.upsert` (Phase C2.3 reuse
+        boundary: this lets the unchanged Lite hidden-lineage/replay/rebuild
+        logic write evidence through this Service-mode repository)."""
+
+        existing = self.session.execute(
+            select(InfluenceEdge).where(
+                and_(
+                    InfluenceEdge.source == edge.source,
+                    InfluenceEdge.target == edge.target,
+                    InfluenceEdge.relation == edge.relation.value,
+                )
+            )
+        ).scalar_one_or_none()
+        now = edge.updated_at or datetime.now(timezone.utc).isoformat()
+        payload = {"evidence": edge.evidence, "intervention": edge.intervention}
+        if existing is None:
+            row = InfluenceEdge(
+                source=edge.source,
+                target=edge.target,
+                relation=edge.relation.value,
+                evidence_class=edge.evidence_class.value,
+                status=edge.status,
+                confidence=edge.confidence,
+                payload_json=payload,
+                created_at=_parse_ts(edge.created_at) or _now(),
+                updated_at=_parse_ts(now),
+                scorer_version=edge.scorer_version,
+                invalidation_reason=edge.invalidation_reason,
+            )
+            self.session.add(row)
+            try:
+                self.session.commit()
+            except IntegrityError:
+                self.session.rollback()
+                self.upsert(edge)  # lost a race with a concurrent identical insert -- retry as update
+                return
+        else:
+            existing.evidence_class = edge.evidence_class.value
+            existing.status = edge.status
+            existing.confidence = edge.confidence
+            existing.payload_json = payload
+            existing.updated_at = _parse_ts(now)
+            existing.scorer_version = edge.scorer_version
+            existing.invalidation_reason = edge.invalidation_reason
+            self.session.commit()
+
+    def list_all(self, *, status: Optional[str] = None, evidence_class: Optional[str] = None) -> list[InfluenceEdgeDomain]:
+        statuses = (status,) if status else ()
+        classes = (evidence_class,) if evidence_class else None
+        return self.load_edges(evidence_classes=classes, statuses=statuses or ("active",))
 
     def graph(
         self,

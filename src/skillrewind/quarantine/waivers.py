@@ -14,12 +14,13 @@ from ..config import SkillRewindConfig
 from ..domain.enums import RevocationPolicy
 from ..domain.errors import PolicyViolationError
 from ..domain.models import Waiver
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 from .service import release_quarantine
 
 
 def create_waiver(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     artifact_id: str,
     *,
     actor: str,
@@ -55,6 +56,6 @@ def create_waiver(
     return waiver
 
 
-def revoke_waiver(workspace: Workspace, waiver_id: str, *, actor: str) -> None:
+def revoke_waiver(workspace: WorkspaceLike, waiver_id: str, *, actor: str) -> None:
     workspace.waivers.revoke(waiver_id)
     workspace.audit.append("waiver.revoked", actor, {"waiver_id": waiver_id})

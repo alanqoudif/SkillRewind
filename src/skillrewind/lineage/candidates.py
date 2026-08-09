@@ -15,7 +15,8 @@ from ..features.implementation import implementation_similarity
 from ..features.operational import operational_similarity
 from ..features.temporal import temporal_proximity
 from ..inference.scoring import FeatureBreakdown, ScoreResult, score_candidate
-from ..workspace import Workspace, timestamp
+from ..workspace import timestamp
+from ..workspace_protocol import WorkspaceLike
 from .closure import build_graph
 from .neighborhoods import build_neighborhood
 
@@ -43,7 +44,7 @@ class CandidateResult:
         }
 
 
-def _artifact_text(workspace: Workspace, artifact: Artifact) -> tuple[str, str]:
+def _artifact_text(workspace: WorkspaceLike, artifact: Artifact) -> tuple[str, str]:
     """Return ``(expression_text, python_source_text)`` best-effort for an artifact."""
 
     manifest = artifact.metadata.get("agent_skills_manifest")
@@ -68,7 +69,7 @@ def _artifact_text(workspace: Workspace, artifact: Artifact) -> tuple[str, str]:
 
 
 def score_pair(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     candidate: Artifact,
     target: Artifact,
     *,
@@ -131,7 +132,7 @@ def score_pair(
 
 
 def recover_candidates(
-    workspace: Workspace,
+    workspace: WorkspaceLike,
     target_artifact_id: str,
     *,
     config: Optional[SkillRewindConfig] = None,
