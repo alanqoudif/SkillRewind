@@ -41,6 +41,30 @@ class RelationType(str, Enum):
     CLEAN_SUPPORT = "clean-support"
     RECORDED_INFLUENCE = "recorded-influence"
     HIDDEN_INFLUENCE = "hidden-influence"
+    # Service-mode derivation-input relation types (Phase C2.1). Distinct
+    # names from the pre-existing ones above for backward compatibility;
+    # DIRECT_INPUT/RETRIEVED_MEMORY/etc. are what derivation-capture callers
+    # use, the older names remain for Lite-mode/v0.2 callers.
+    DIRECT_INPUT = "direct-input"
+    RETRIEVED_MEMORY = "retrieved-memory"
+    DISTILLED_FROM = "distilled-from"
+    GENERATED_FROM_TRACE = "generated-from-trace"
+    IMPORTED_DEPENDENCY = "imported-dependency"
+
+
+#: Relation types accepted for a derivation's parent-input edges (master spec
+#: Phase C2.1 section 1). ``context-exposure`` is shared with the pre-existing
+#: v0.2 enum member of the same value.
+DERIVATION_INPUT_RELATIONS = frozenset(
+    {
+        RelationType.DIRECT_INPUT.value,
+        RelationType.CONTEXT_EXPOSURE.value,
+        RelationType.RETRIEVED_MEMORY.value,
+        RelationType.DISTILLED_FROM.value,
+        RelationType.GENERATED_FROM_TRACE.value,
+        RelationType.IMPORTED_DEPENDENCY.value,
+    }
+)
 
 
 class EvidenceClass(str, Enum):
@@ -145,6 +169,11 @@ class ReplayVerdict(str, Enum):
     UNRESOLVED_REPETITIONS = "unresolved-repetitions"
     UNRESOLVED_BUDGET = "unresolved-budget"
     UNRESOLVED_RUNNER_FAILURE = "unresolved-runner-failure"
+    #: Reconstruction inputs (e.g. the candidate's derivation) do not exist,
+    #: so no runner could even be invoked. Added for Service-mode replay
+    #: (Phase C2.2); like every other UNRESOLVED_* member, this must never be
+    #: conflated with REJECTED -- missing inputs prove nothing about influence.
+    UNRESOLVED_MISSING_INPUTS = "unresolved-missing-inputs"
 
 
 class InterventionKind(str, Enum):

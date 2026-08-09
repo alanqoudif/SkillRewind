@@ -25,7 +25,7 @@ from ..cas.local import LocalCAS
 from ..config import SkillRewindConfig, load_config
 from ..persistence.service.engine import build_engine
 from .ratelimit import RateLimiter
-from .routers import admin, artifacts, bench, events, health, jobs
+from .routers import admin, artifacts, bench, candidates, derivations, events, health, jobs, lineage, replay
 
 
 def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
@@ -70,7 +70,17 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     app.include_router(jobs.router)
     app.include_router(bench.router)
     app.include_router(events.router)
+    # derivations.router owns more specific `/artifacts/{id}/parents` and
+    # `/artifacts/{id}/children` suffix routes under the same
+    # `/api/v1/artifacts` prefix as artifacts.router's catch-all
+    # `/{artifact_id:path}` route; it must be registered first so Starlette
+    # (which matches in registration order) tries the specific suffix routes
+    # before the greedy catch-all swallows the suffix into `artifact_id`.
+    app.include_router(derivations.router)
     app.include_router(artifacts.router)
+    app.include_router(lineage.router)
+    app.include_router(candidates.router)
+    app.include_router(replay.router)
 
     @app.exception_handler(StarletteHTTPException)
     async def _problem_detail_handler(request, exc: StarletteHTTPException) -> JSONResponse:
