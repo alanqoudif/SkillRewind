@@ -65,6 +65,26 @@ All notable changes to this project are documented here. Format loosely follows 
 - SSE ordering/resumability is proven at the `JobQueue.events(after_event_id=...)` level (what the SSE endpoint itself polls), not via a full streaming HTTP client test.
 - The 40+-item failure/security/policy-mode test matrix in the milestone spec is covered by a representative subset (documented above), not exhaustively enumerated.
 
+### Added — Phase C2.4: core hardening, API freeze, and integration contract
+- New standalone read API: `GET /api/v1/rebuilds/{id}[/support|/exclusions|/output|/verification]`, `GET /api/v1/revocations/{id}/rebuilds`, `GET /api/v1/verifications/{id}[/checks|/safety|/utility|/integrity]` — closes the Phase C2.3 "reduced-depth" gap above; safety/utility/integrity are never collapsed into one boolean.
+- Waiver semantics fixed to be a true dynamic policy overlay (closes the other Phase C2.3 "reduced-depth" gap above): `create_waiver` no longer mutates `artifact.status`/the quarantine entry; `resolve_alias` (both Lite and Service mode) and `rebuild.planner.plan_rebuild` now dynamically evaluate active, correctly-scoped, unexpired, unrevoked waivers on every call. Canonical scopes `serving`/`rebuild-support` (with `quarantine-release`/`quarantine` accepted as backward-compatible aliases for `serving`).
+- Real end-to-end HTTP SSE resume test (`tests/integration/test_sse_resume_http.py`) against a genuine `uvicorn` socket — discovered along the way that `httpx.ASGITransport`/`TestClient` cannot test a truly open-ended SSE stream at all (it buffers the full response until the ASGI coroutine returns), which is why this test uses a real server thread instead.
+- `docs/integration-contract-v1.md`, `docs/api-stability-v1.md`, `docs/event-contract-v1.md`, `docs/threat-model.md`, `docs/release-readiness-v0.3.md`: the public integration contract, endpoint stability categorization, canonical event envelope, trust-boundary analysis, and honest component-status table.
+- `docs/openapi-v1.json`, generated from the live FastAPI app via `make openapi` / `skillrewind openapi-export`; staleness-checked by `tests/unit/test_openapi_not_stale.py`.
+- `skillrewind.conformance` (`describe()`/`run_self_test()`) + `skillrewind conformance describe`/`self-test` CLI commands: machine-readable Level 1/2/3 contract requirements and a local proof the Service-mode API satisfies its own contract.
+- `skillrewind.adapters.protocols` (6 reference `Protocol`s: `ArtifactProvider`, `DerivationProvider`, `ResolutionEnforcer`, `ReplayProvider`, `RebuildProvider`, `EventConsumer`, with no internal-class coupling) + `skillrewind.adapters.reference.InMemoryReferenceAdapter`.
+- `tests/smoke/clean_install_smoke.py` / `make clean-install-smoke`: builds a real wheel and installs it into a fresh `uv`-managed venv outside the source tree, then exercises import/CLI/Lite/Service-instantiate/API flow.
+- `tests/integration/test_public_contract_freeze_e2e.py`: the full poisoned-descendant workflow driven only through public `stable-v1` HTTP endpoints (the one exception being running the durable job worker, an operational/deployment action with no public "process next job" endpoint).
+- `tests/integration/test_safety_invariants_c24.py`, `tests/integration/test_waiver_semantics_c24.py`: targeted additions to the critical safety test matrix (concurrent duplicate ingest, CAS corruption surfacing through the API, API-key-never-leaked, Problem Details shape stability, cross-actor read-isolation model, duplicate-relation idempotency, waiver expiry/revocation/restart-persistence/concurrent-resolution/rebuild-support-scope interaction).
+- Version bumped to `0.3.0a1` (`pyproject.toml`, `CITATION.cff`); README and SECURITY.md repositioned for the v0.3 alpha integration-preview scope.
+
+### Fixed — Phase C2.4
+- `LocalCAS.get_bytes()`/`open_stream()` never verified the digest of bytes read from disk against the requested `digest_hex` on the normal read path (only the separate `verify_integrity()` did) — `GET /api/v1/artifacts/{id}/content` silently served corrupted/tampered CAS content as `200 OK`. Fixed to hash on every read and raise `CASIntegrityError` on mismatch, surfaced by the API as a `500 Integrity Error` Problem Details response.
+- `find_by_alias` (both Lite and Service `ArtifactRepository`) filtered `status = 'active'` at the SQL level, which made the waiver-overlay fix above impossible (a quarantined artifact could never be found by alias regardless of an active waiver). Broadened to `status IN ('active', 'quarantined')`; the actual eligibility decision is entirely `resolve_alias`'s.
+
+### Noted, not fixed this milestone
+- `skillrewind.lineage.candidates.recover_candidates` (used internally by `run_revocation` to re-derive candidates during an actual revocation) and `skillrewind.lineage.service_recovery.run_candidate_recovery` (used by the async `POST /api/v1/lineage/recovery-runs` API) are two independent scoring implementations that can disagree on borderline content — see `docs/release-readiness-v0.3.md` for detail.
+
 ## [0.2.0] — Research Preview
 
 ### Added

@@ -1,0 +1,4279 @@
+{
+  "components": {
+    "schemas": {
+      "AddInputsRequest": {
+        "properties": {
+          "inputs": {
+            "examples": [
+              [
+                {
+                  "parent_artifact_id": "skill://base@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+                  "relation": "direct-input"
+                }
+              ]
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DerivationInputEntry"
+            },
+            "title": "Inputs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "title": "AddInputsRequest",
+        "type": "object"
+      },
+      "ApiKeyCreatedResponse": {
+        "properties": {
+          "key_id": {
+            "title": "Key Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plaintext": {
+            "title": "Plaintext",
+            "type": "string"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key_id",
+          "plaintext",
+          "prefix",
+          "name",
+          "scopes"
+        ],
+        "title": "ApiKeyCreatedResponse",
+        "type": "object"
+      },
+      "ApiKeyResponse": {
+        "properties": {
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "key_id": {
+            "title": "Key Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key_id",
+          "prefix",
+          "name",
+          "actor",
+          "scopes",
+          "status",
+          "created_at",
+          "expires_at",
+          "last_used_at"
+        ],
+        "title": "ApiKeyResponse",
+        "type": "object"
+      },
+      "BuildAttestationRequest": {
+        "properties": {
+          "revocation_id": {
+            "title": "Revocation Id",
+            "type": "string"
+          },
+          "sign": {
+            "default": false,
+            "title": "Sign",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revocation_id"
+        ],
+        "title": "BuildAttestationRequest",
+        "type": "object"
+      },
+      "CreateApiKeyRequest": {
+        "properties": {
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "actor",
+          "scopes"
+        ],
+        "title": "CreateApiKeyRequest",
+        "type": "object"
+      },
+      "CreateBenchRunRequest": {
+        "properties": {
+          "method": {
+            "default": "static-multitrace",
+            "title": "Method",
+            "type": "string"
+          },
+          "preset": {
+            "default": "smoke",
+            "title": "Preset",
+            "type": "string"
+          },
+          "seed": {
+            "default": 42,
+            "title": "Seed",
+            "type": "integer"
+          }
+        },
+        "title": "CreateBenchRunRequest",
+        "type": "object"
+      },
+      "CreateDerivationRequest": {
+        "examples": [
+          {
+            "ended_at": "2026-08-09T00:05:00Z",
+            "payload": {
+              "model_id": "example-model",
+              "tool_calls": [
+                {
+                  "tool": "write_file"
+                }
+              ]
+            },
+            "recipe": "skill-authoring-agent",
+            "recipe_version": "1.0.0",
+            "started_at": "2026-08-09T00:00:00Z"
+          }
+        ],
+        "properties": {
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "examples": [
+              {
+                "model_id": "example-model",
+                "tool_calls": []
+              }
+            ],
+            "title": "Payload",
+            "type": "object"
+          },
+          "recipe": {
+            "examples": [
+              "skill-authoring-agent"
+            ],
+            "title": "Recipe",
+            "type": "string"
+          },
+          "recipe_version": {
+            "examples": [
+              "1.0.0"
+            ],
+            "title": "Recipe Version",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          }
+        },
+        "required": [
+          "recipe",
+          "recipe_version"
+        ],
+        "title": "CreateDerivationRequest",
+        "type": "object"
+      },
+      "CreateRecoveryRunRequest": {
+        "properties": {
+          "candidate_scope": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              {
+                "kind": "agent-skill"
+              }
+            ],
+            "title": "Candidate Scope"
+          },
+          "root_artifact_id": {
+            "examples": [
+              "skill://poisoned-root@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+            ],
+            "title": "Root Artifact Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root_artifact_id"
+        ],
+        "title": "CreateRecoveryRunRequest",
+        "type": "object"
+      },
+      "CreateWaiverRequest": {
+        "properties": {
+          "artifact_id": {
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "revocation_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Event Id"
+          },
+          "scope": {
+            "default": "serving",
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "reason"
+        ],
+        "title": "CreateWaiverRequest",
+        "type": "object"
+      },
+      "DerivationInputEntry": {
+        "properties": {
+          "parent_artifact_id": {
+            "title": "Parent Artifact Id",
+            "type": "string"
+          },
+          "relation": {
+            "examples": [
+              "direct-input"
+            ],
+            "title": "Relation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent_artifact_id",
+          "relation"
+        ],
+        "title": "DerivationInputEntry",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "PreviewRequest": {
+        "properties": {
+          "manual_targets": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Manual Targets",
+            "type": "array"
+          },
+          "policy": {
+            "default": "balanced",
+            "title": "Policy",
+            "type": "string"
+          },
+          "roots": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Roots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roots"
+        ],
+        "title": "PreviewRequest",
+        "type": "object"
+      },
+      "SetOutputRequest": {
+        "properties": {
+          "artifact_id": {
+            "title": "Artifact Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id"
+        ],
+        "title": "SetOutputRequest",
+        "type": "object"
+      },
+      "SubmitReplayRequest": {
+        "properties": {
+          "candidate_id": {
+            "examples": [
+              "1"
+            ],
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "repetitions": {
+            "default": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Repetitions",
+            "type": "integer"
+          },
+          "runner_name": {
+            "default": "deterministic-fixture",
+            "examples": [
+              "deterministic-fixture"
+            ],
+            "title": "Runner Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id"
+        ],
+        "title": "SubmitReplayRequest",
+        "type": "object"
+      },
+      "SubmitRevocationRequest": {
+        "properties": {
+          "attestation_requested": {
+            "default": false,
+            "title": "Attestation Requested",
+            "type": "boolean"
+          },
+          "max_replay_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Replay Calls"
+          },
+          "policy": {
+            "default": "balanced",
+            "title": "Policy",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "rebuild_enabled": {
+            "default": true,
+            "title": "Rebuild Enabled",
+            "type": "boolean"
+          },
+          "replay_selection": {
+            "default": "active",
+            "title": "Replay Selection",
+            "type": "string"
+          },
+          "roots": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Roots",
+            "type": "array"
+          },
+          "severity": {
+            "default": "high",
+            "title": "Severity",
+            "type": "string"
+          },
+          "sign_requested": {
+            "default": false,
+            "title": "Sign Requested",
+            "type": "boolean"
+          },
+          "verification_suite": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification Suite"
+          }
+        },
+        "required": [
+          "roots",
+          "reason"
+        ],
+        "title": "SubmitRevocationRequest",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "SkillRewind API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/admin/api-keys": {
+      "get": {
+        "operationId": "list_keys_api_v1_admin_api_keys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  },
+                  "title": "Response List Keys Api V1 Admin Api Keys Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Keys",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "create_key_api_v1_admin_api_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreatedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Key",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/api-keys/{key_id}": {
+      "delete": {
+        "operationId": "revoke_key_api_v1_admin_api_keys__key_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Key",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/diagnostics": {
+      "get": {
+        "description": "Non-secret configuration + version snapshot. Never includes key hashes,\ndatabase credentials, or provider API keys (master spec 8.5 / 12.3).",
+        "operationId": "diagnostics_api_v1_admin_diagnostics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Diagnostics Api V1 Admin Diagnostics Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Diagnostics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/artifacts": {
+      "get": {
+        "operationId": "list_artifacts_api_v1_artifacts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Artifacts Api V1 Artifacts Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Artifacts",
+        "tags": [
+          "artifacts"
+        ]
+      },
+      "post": {
+        "operationId": "ingest_artifact_api_v1_artifacts_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "logical_name",
+            "required": true,
+            "schema": {
+              "title": "Logical Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mime_type",
+            "required": false,
+            "schema": {
+              "default": "application/octet-stream",
+              "title": "Mime Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Metadata",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Metadata"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ingest Artifact Api V1 Artifacts Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ingest Artifact",
+        "tags": [
+          "artifacts"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}": {
+      "get": {
+        "operationId": "get_artifact_api_v1_artifacts__artifact_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Artifact Api V1 Artifacts  Artifact Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact",
+        "tags": [
+          "artifacts"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/children": {
+      "get": {
+        "operationId": "get_artifact_children_api_v1_artifacts__artifact_id__children_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Artifact Children Api V1 Artifacts  Artifact Id  Children Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Children",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/content": {
+      "get": {
+        "operationId": "get_artifact_content_api_v1_artifacts__artifact_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Content",
+        "tags": [
+          "artifacts"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/derivation": {
+      "get": {
+        "operationId": "get_artifact_derivation_api_v1_artifacts__artifact_id__derivation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Artifact Derivation Api V1 Artifacts  Artifact Id  Derivation Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Derivation",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/parents": {
+      "get": {
+        "operationId": "get_artifact_parents_api_v1_artifacts__artifact_id__parents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Artifact Parents Api V1 Artifacts  Artifact Id  Parents Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Parents",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/quarantine": {
+      "get": {
+        "operationId": "get_artifact_quarantine_api_v1_artifacts__artifact_id__quarantine_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Artifact Quarantine Api V1 Artifacts  Artifact Id  Quarantine Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Artifact Quarantine",
+        "tags": [
+          "quarantine"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/resolve": {
+      "get": {
+        "description": "Serving resolution (Phase C2.1 section 7): is `artifact_id` eligible\nfor use? Side-effect free (read-only) and never resolves a revoked or\nquarantined artifact as allowed merely because an *inferred* candidate\nscore exists elsewhere in the graph -- this handler never even queries\n`candidate_scores`. A verified active successor (`superseded_by`) is\nsurfaced when one exists; an unrevoked waiver on a revoked/quarantined\nartifact resolves to `allowed-by-waiver`, recording which waiver/policy\ndrove the decision.",
+        "operationId": "resolve_artifact_api_v1_artifacts__artifact_id__resolve_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Resolve Artifact Api V1 Artifacts  Artifact Id  Resolve Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Artifact",
+        "tags": [
+          "artifacts"
+        ]
+      }
+    },
+    "/api/v1/artifacts/{artifact_id}/waivers": {
+      "get": {
+        "operationId": "list_artifact_waivers_api_v1_artifacts__artifact_id__waivers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Artifact Waivers Api V1 Artifacts  Artifact Id  Waivers Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Artifact Waivers",
+        "tags": [
+          "waivers"
+        ]
+      }
+    },
+    "/api/v1/attestations": {
+      "post": {
+        "operationId": "build_attestation_endpoint_api_v1_attestations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildAttestationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Build Attestation Endpoint Api V1 Attestations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Build Attestation Endpoint",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/attestations/{attestation_id}": {
+      "get": {
+        "operationId": "get_attestation_api_v1_attestations__attestation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attestation_id",
+            "required": true,
+            "schema": {
+              "title": "Attestation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Attestation Api V1 Attestations  Attestation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Attestation",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/attestations/{attestation_id}/canonical": {
+      "get": {
+        "operationId": "get_canonical_api_v1_attestations__attestation_id__canonical_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attestation_id",
+            "required": true,
+            "schema": {
+              "title": "Attestation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Canonical",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/attestations/{attestation_id}/render": {
+      "get": {
+        "operationId": "render_attestation_api_v1_attestations__attestation_id__render_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attestation_id",
+            "required": true,
+            "schema": {
+              "title": "Attestation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "markdown",
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Render Attestation",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/attestations/{attestation_id}/sign": {
+      "post": {
+        "operationId": "sign_attestation_endpoint_api_v1_attestations__attestation_id__sign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attestation_id",
+            "required": true,
+            "schema": {
+              "title": "Attestation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Sign Attestation Endpoint Api V1 Attestations  Attestation Id  Sign Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sign Attestation Endpoint",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/attestations/{attestation_id}/verify": {
+      "post": {
+        "operationId": "verify_attestation_endpoint_api_v1_attestations__attestation_id__verify_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attestation_id",
+            "required": true,
+            "schema": {
+              "title": "Attestation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Verify Attestation Endpoint Api V1 Attestations  Attestation Id  Verify Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Attestation Endpoint",
+        "tags": [
+          "attestations"
+        ]
+      }
+    },
+    "/api/v1/bench/runs": {
+      "get": {
+        "operationId": "list_bench_runs_api_v1_bench_runs_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Bench Runs Api V1 Bench Runs Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Bench Runs",
+        "tags": [
+          "bench"
+        ]
+      },
+      "post": {
+        "operationId": "create_bench_run_api_v1_bench_runs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBenchRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Bench Run Api V1 Bench Runs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Bench Run",
+        "tags": [
+          "bench"
+        ]
+      }
+    },
+    "/api/v1/bench/runs/{job_id}": {
+      "get": {
+        "operationId": "get_bench_run_api_v1_bench_runs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Bench Run Api V1 Bench Runs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Bench Run",
+        "tags": [
+          "bench"
+        ]
+      }
+    },
+    "/api/v1/bench/runs/{job_id}/report": {
+      "get": {
+        "operationId": "get_bench_run_report_api_v1_bench_runs__job_id__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Bench Run Report Api V1 Bench Runs  Job Id  Report Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Bench Run Report",
+        "tags": [
+          "bench"
+        ]
+      }
+    },
+    "/api/v1/derivations": {
+      "post": {
+        "operationId": "create_derivation_api_v1_derivations_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDerivationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Derivation Api V1 Derivations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Derivation",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/derivations/{derivation_id}": {
+      "get": {
+        "operationId": "get_derivation_api_v1_derivations__derivation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "derivation_id",
+            "required": true,
+            "schema": {
+              "title": "Derivation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Derivation Api V1 Derivations  Derivation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Derivation",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/derivations/{derivation_id}/inputs": {
+      "post": {
+        "operationId": "add_derivation_inputs_api_v1_derivations__derivation_id__inputs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "derivation_id",
+            "required": true,
+            "schema": {
+              "title": "Derivation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddInputsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Add Derivation Inputs Api V1 Derivations  Derivation Id  Inputs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Derivation Inputs",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/derivations/{derivation_id}/output": {
+      "post": {
+        "operationId": "set_derivation_output_api_v1_derivations__derivation_id__output_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "derivation_id",
+            "required": true,
+            "schema": {
+              "title": "Derivation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOutputRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Set Derivation Output Api V1 Derivations  Derivation Id  Output Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Derivation Output",
+        "tags": [
+          "derivations"
+        ]
+      }
+    },
+    "/api/v1/events/stream": {
+      "get": {
+        "operationId": "stream_events_api_v1_events_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "poll_interval",
+            "required": false,
+            "schema": {
+              "default": 0.2,
+              "title": "Poll Interval",
+              "type": "number"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Events",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "operationId": "list_jobs_api_v1_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Jobs Api V1 Jobs Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Jobs",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Job Api V1 Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_api_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Cancel Job Api V1 Jobs  Job Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}/retry": {
+      "post": {
+        "operationId": "retry_job_api_v1_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Retry Job Api V1 Jobs  Job Id  Retry Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/api/v1/lineage/candidates/{candidate_id}": {
+      "get": {
+        "operationId": "get_candidate_api_v1_lineage_candidates__candidate_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Candidate Api V1 Lineage Candidates  Candidate Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Candidate",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/candidates/{candidate_id}/explanation": {
+      "get": {
+        "operationId": "get_candidate_explanation_api_v1_lineage_candidates__candidate_id__explanation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Candidate Explanation Api V1 Lineage Candidates  Candidate Id  Explanation Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Candidate Explanation",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/candidates/{candidate_id}/history": {
+      "get": {
+        "description": "Candidate history (Phase C2.2): the original inferred evidence\n(unchanged, never overwritten by a replay outcome) plus a summary of\nevery replay run submitted against this candidate, newest first.",
+        "operationId": "get_candidate_history_api_v1_lineage_candidates__candidate_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "candidate_id",
+            "required": true,
+            "schema": {
+              "title": "Candidate Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Candidate History Api V1 Lineage Candidates  Candidate Id  History Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Candidate History",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/path": {
+      "get": {
+        "operationId": "get_path_api_v1_lineage_path_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "title": "Target",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_classes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evidence Classes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation_types",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation Types"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Path Api V1 Lineage Path Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Path",
+        "tags": [
+          "lineage"
+        ]
+      }
+    },
+    "/api/v1/lineage/recovery-runs": {
+      "post": {
+        "operationId": "create_recovery_run_api_v1_lineage_recovery_runs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecoveryRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Recovery Run Api V1 Lineage Recovery Runs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Recovery Run",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/recovery-runs/{run_id}": {
+      "get": {
+        "operationId": "get_recovery_run_api_v1_lineage_recovery_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Recovery Run Api V1 Lineage Recovery Runs  Run Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Recovery Run",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/recovery-runs/{run_id}/candidates": {
+      "get": {
+        "operationId": "list_recovery_run_candidates_api_v1_lineage_recovery_runs__run_id__candidates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_class",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evidence Class"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_raw_score",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Raw Score"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Recovery Run Candidates Api V1 Lineage Recovery Runs  Run Id  Candidates Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Recovery Run Candidates",
+        "tags": [
+          "candidates"
+        ]
+      }
+    },
+    "/api/v1/lineage/{artifact_id}/ancestors": {
+      "get": {
+        "operationId": "get_ancestors_api_v1_lineage__artifact_id__ancestors_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_roots",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Include Roots",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Depth"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation_types",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation Types"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Ancestors Api V1 Lineage  Artifact Id  Ancestors Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Ancestors",
+        "tags": [
+          "lineage"
+        ]
+      }
+    },
+    "/api/v1/lineage/{artifact_id}/cycles": {
+      "get": {
+        "operationId": "get_cycles_api_v1_lineage__artifact_id__cycles_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Cycles Api V1 Lineage  Artifact Id  Cycles Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Cycles",
+        "tags": [
+          "lineage"
+        ]
+      }
+    },
+    "/api/v1/lineage/{artifact_id}/descendants": {
+      "get": {
+        "operationId": "get_descendants_api_v1_lineage__artifact_id__descendants_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_roots",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Include Roots",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Depth"
+            }
+          },
+          {
+            "description": "Comma-separated relation types",
+            "in": "query",
+            "name": "relation_types",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated relation types",
+              "title": "Relation Types"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Descendants Api V1 Lineage  Artifact Id  Descendants Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Descendants",
+        "tags": [
+          "lineage"
+        ]
+      }
+    },
+    "/api/v1/lineage/{artifact_id}/graph": {
+      "get": {
+        "operationId": "get_graph_api_v1_lineage__artifact_id__graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "artifact_id",
+            "required": true,
+            "schema": {
+              "title": "Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_classes",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evidence Classes"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation_types",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation Types"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_depth",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 1000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Depth"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Graph Api V1 Lineage  Artifact Id  Graph Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Graph",
+        "tags": [
+          "lineage"
+        ]
+      }
+    },
+    "/api/v1/quarantine": {
+      "get": {
+        "operationId": "list_quarantine_api_v1_quarantine_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Quarantine Api V1 Quarantine Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Quarantine",
+        "tags": [
+          "quarantine"
+        ]
+      }
+    },
+    "/api/v1/quarantine/{quarantine_id}": {
+      "get": {
+        "operationId": "get_quarantine_entry_api_v1_quarantine__quarantine_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quarantine_id",
+            "required": true,
+            "schema": {
+              "title": "Quarantine Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Quarantine Entry Api V1 Quarantine  Quarantine Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Quarantine Entry",
+        "tags": [
+          "quarantine"
+        ]
+      }
+    },
+    "/api/v1/rebuilds/{rebuild_id}": {
+      "get": {
+        "operationId": "get_rebuild_api_v1_rebuilds__rebuild_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rebuild_id",
+            "required": true,
+            "schema": {
+              "title": "Rebuild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Rebuild Api V1 Rebuilds  Rebuild Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rebuild",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/rebuilds/{rebuild_id}/exclusions": {
+      "get": {
+        "operationId": "get_rebuild_exclusions_api_v1_rebuilds__rebuild_id__exclusions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rebuild_id",
+            "required": true,
+            "schema": {
+              "title": "Rebuild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Rebuild Exclusions Api V1 Rebuilds  Rebuild Id  Exclusions Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rebuild Exclusions",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/rebuilds/{rebuild_id}/output": {
+      "get": {
+        "operationId": "get_rebuild_output_api_v1_rebuilds__rebuild_id__output_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rebuild_id",
+            "required": true,
+            "schema": {
+              "title": "Rebuild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Rebuild Output Api V1 Rebuilds  Rebuild Id  Output Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rebuild Output",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/rebuilds/{rebuild_id}/support": {
+      "get": {
+        "operationId": "get_rebuild_support_api_v1_rebuilds__rebuild_id__support_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rebuild_id",
+            "required": true,
+            "schema": {
+              "title": "Rebuild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Rebuild Support Api V1 Rebuilds  Rebuild Id  Support Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rebuild Support",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/rebuilds/{rebuild_id}/verification": {
+      "get": {
+        "operationId": "get_rebuild_verification_api_v1_rebuilds__rebuild_id__verification_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rebuild_id",
+            "required": true,
+            "schema": {
+              "title": "Rebuild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Rebuild Verification Api V1 Rebuilds  Rebuild Id  Verification Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Rebuild Verification",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/replay/runs": {
+      "post": {
+        "operationId": "submit_replay_run_api_v1_replay_runs_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReplayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Replay Run Api V1 Replay Runs Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Replay Run",
+        "tags": [
+          "replay"
+        ]
+      }
+    },
+    "/api/v1/replay/runs/{replay_run_id}": {
+      "get": {
+        "operationId": "get_replay_run_api_v1_replay_runs__replay_run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "replay_run_id",
+            "required": true,
+            "schema": {
+              "title": "Replay Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Replay Run Api V1 Replay Runs  Replay Run Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Replay Run",
+        "tags": [
+          "replay"
+        ]
+      }
+    },
+    "/api/v1/replay/runs/{replay_run_id}/classification": {
+      "get": {
+        "operationId": "get_replay_run_classification_api_v1_replay_runs__replay_run_id__classification_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "replay_run_id",
+            "required": true,
+            "schema": {
+              "title": "Replay Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Replay Run Classification Api V1 Replay Runs  Replay Run Id  Classification Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Replay Run Classification",
+        "tags": [
+          "replay"
+        ]
+      }
+    },
+    "/api/v1/replay/runs/{replay_run_id}/evidence": {
+      "get": {
+        "operationId": "get_replay_run_evidence_api_v1_replay_runs__replay_run_id__evidence_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "replay_run_id",
+            "required": true,
+            "schema": {
+              "title": "Replay Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Replay Run Evidence Api V1 Replay Runs  Replay Run Id  Evidence Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Replay Run Evidence",
+        "tags": [
+          "replay"
+        ]
+      }
+    },
+    "/api/v1/revocations": {
+      "post": {
+        "operationId": "submit_revocation_api_v1_revocations_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRevocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Revocation Api V1 Revocations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Revocation",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/revocations/preview": {
+      "post": {
+        "operationId": "preview_revocation_api_v1_revocations_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Preview Revocation Api V1 Revocations Preview Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Revocation",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/revocations/{revocation_id}": {
+      "get": {
+        "operationId": "get_revocation_api_v1_revocations__revocation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "revocation_id",
+            "required": true,
+            "schema": {
+              "title": "Revocation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Revocation Api V1 Revocations  Revocation Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Revocation",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/revocations/{revocation_id}/cancel": {
+      "post": {
+        "operationId": "cancel_revocation_api_v1_revocations__revocation_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "revocation_id",
+            "required": true,
+            "schema": {
+              "title": "Revocation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Cancel Revocation Api V1 Revocations  Revocation Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Revocation",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/revocations/{revocation_id}/preview": {
+      "get": {
+        "operationId": "get_revocation_preview_api_v1_revocations__revocation_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "revocation_id",
+            "required": true,
+            "schema": {
+              "title": "Revocation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Revocation Preview Api V1 Revocations  Revocation Id  Preview Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Revocation Preview",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/revocations/{revocation_id}/rebuilds": {
+      "get": {
+        "operationId": "list_rebuilds_for_revocation_api_v1_revocations__revocation_id__rebuilds_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "revocation_id",
+            "required": true,
+            "schema": {
+              "title": "Revocation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Rebuilds For Revocation Api V1 Revocations  Revocation Id  Rebuilds Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Rebuilds For Revocation",
+        "tags": [
+          "rebuilds"
+        ]
+      }
+    },
+    "/api/v1/revocations/{revocation_id}/targets": {
+      "get": {
+        "operationId": "get_revocation_targets_api_v1_revocations__revocation_id__targets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "revocation_id",
+            "required": true,
+            "schema": {
+              "title": "Revocation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Revocation Targets Api V1 Revocations  Revocation Id  Targets Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Revocation Targets",
+        "tags": [
+          "revocations"
+        ]
+      }
+    },
+    "/api/v1/schemas/{schema_name}": {
+      "get": {
+        "operationId": "get_schema_api_v1_schemas__schema_name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "schema_name",
+            "required": true,
+            "schema": {
+              "title": "Schema Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Schema Api V1 Schemas  Schema Name  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Schema",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/verifications/{verification_id}": {
+      "get": {
+        "operationId": "get_verification_api_v1_verifications__verification_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "verification_id",
+            "required": true,
+            "schema": {
+              "title": "Verification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Verification Api V1 Verifications  Verification Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Verification",
+        "tags": [
+          "verifications"
+        ]
+      }
+    },
+    "/api/v1/verifications/{verification_id}/checks": {
+      "get": {
+        "operationId": "get_verification_checks_api_v1_verifications__verification_id__checks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "verification_id",
+            "required": true,
+            "schema": {
+              "title": "Verification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Verification Checks Api V1 Verifications  Verification Id  Checks Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Verification Checks",
+        "tags": [
+          "verifications"
+        ]
+      }
+    },
+    "/api/v1/verifications/{verification_id}/integrity": {
+      "get": {
+        "operationId": "get_verification_integrity_api_v1_verifications__verification_id__integrity_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "verification_id",
+            "required": true,
+            "schema": {
+              "title": "Verification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Verification Integrity Api V1 Verifications  Verification Id  Integrity Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Verification Integrity",
+        "tags": [
+          "verifications"
+        ]
+      }
+    },
+    "/api/v1/verifications/{verification_id}/safety": {
+      "get": {
+        "operationId": "get_verification_safety_api_v1_verifications__verification_id__safety_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "verification_id",
+            "required": true,
+            "schema": {
+              "title": "Verification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Verification Safety Api V1 Verifications  Verification Id  Safety Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Verification Safety",
+        "tags": [
+          "verifications"
+        ]
+      }
+    },
+    "/api/v1/verifications/{verification_id}/utility": {
+      "get": {
+        "operationId": "get_verification_utility_api_v1_verifications__verification_id__utility_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "verification_id",
+            "required": true,
+            "schema": {
+              "title": "Verification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Verification Utility Api V1 Verifications  Verification Id  Utility Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Verification Utility",
+        "tags": [
+          "verifications"
+        ]
+      }
+    },
+    "/api/v1/waivers": {
+      "post": {
+        "operationId": "create_waiver_endpoint_api_v1_waivers_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWaiverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Waiver Endpoint Api V1 Waivers Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Waiver Endpoint",
+        "tags": [
+          "waivers"
+        ]
+      }
+    },
+    "/api/v1/waivers/{waiver_id}": {
+      "get": {
+        "operationId": "get_waiver_api_v1_waivers__waiver_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "waiver_id",
+            "required": true,
+            "schema": {
+              "title": "Waiver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Waiver Api V1 Waivers  Waiver Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Waiver",
+        "tags": [
+          "waivers"
+        ]
+      }
+    },
+    "/api/v1/waivers/{waiver_id}/revoke": {
+      "post": {
+        "operationId": "revoke_waiver_endpoint_api_v1_waivers__waiver_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "waiver_id",
+            "required": true,
+            "schema": {
+              "title": "Waiver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Revoke Waiver Endpoint Api V1 Waivers  Waiver Id  Revoke Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Waiver Endpoint",
+        "tags": [
+          "waivers"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "health_live_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Health Live Health Live Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Live",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "health_ready_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Health Ready Health Ready Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Ready",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Version Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Version",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}

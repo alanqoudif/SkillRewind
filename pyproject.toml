@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skillrewind"
-version = "0.2.0"
-description = "Recovering hidden influence lineage for verified revocation in self-evolving LLM agents (research preview)."
+version = "0.3.0a1"
+description = "Traceable, revocable, and rebuildable persistent learning for AI agents (research and integration preview)."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}

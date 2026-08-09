@@ -50,11 +50,16 @@ def plan_rebuild(workspace: WorkspaceLike, artifact_id: str) -> RebuildPlan:
             continue
 
         if support_artifact.status == LifecycleStatus.REVOKED:
+            # A waiver never overrides a directly revoked root -- see
+            # skillrewind.quarantine.waivers module docstring.
             excluded.append((support_id, "revoked-root"))
             continue
         if workspace.revocations.is_quarantined(support_id):
-            excluded.append((support_id, "quarantined-support"))
-            continue
+            from ..quarantine.waivers import REBUILD_SUPPORT_SCOPE, has_active_waiver
+
+            if not has_active_waiver(workspace, support_id, scopes=frozenset({REBUILD_SUPPORT_SCOPE})):
+                excluded.append((support_id, "quarantined-support"))
+                continue
 
         incoming_confirmed = [
             e for e in workspace.edges.incoming(support_id) if e.evidence_class == EvidenceClass.REPLAY_CONFIRMED

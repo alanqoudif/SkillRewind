@@ -1,5 +1,6 @@
 .PHONY: bootstrap bootstrap-service format lint typecheck test test-unit test-integration test-property test-e2e test-security \
-        schemas bench-smoke demo demo-reset docs paper docker-build docker-smoke db-migrate db-current ci clean
+        schemas bench-smoke demo demo-reset docs paper docker-build docker-smoke db-migrate db-current ci clean \
+        openapi openapi-check conformance-self-test clean-install-smoke
 
 VENV := .venv
 PY := $(VENV)/bin/python
@@ -86,7 +87,19 @@ db-current:
 	fi
 	$(PY) -c "from skillrewind.persistence.service.engine import build_engine, schema_current; import os; e = build_engine(os.environ['SKILLREWIND_DATABASE_URL']); ok, detail = schema_current(e); print(detail); raise SystemExit(0 if ok else 1)"
 
-ci: lint typecheck test schemas bench-smoke
+openapi:
+	$(VENV)/bin/skillrewind openapi-export --output docs/openapi-v1.json
+
+openapi-check:
+	$(PY) -m pytest tests/unit/test_openapi_not_stale.py -q
+
+conformance-self-test:
+	$(VENV)/bin/skillrewind conformance self-test
+
+clean-install-smoke:
+	$(PY) tests/smoke/clean_install_smoke.py
+
+ci: lint typecheck test schemas bench-smoke openapi-check
 
 clean:
 	rm -rf build dist *.egg-info src/*.egg-info paper/build paper/rendered paper/rendered-final .runs .skillrewind-demo
