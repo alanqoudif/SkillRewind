@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>SkillRewind mark</title>
+  <rect width="64" height="64" rx="12" fill="#0b0c0e"/>
+  <circle cx="16" cy="16" r="5" fill="#5b8dee"/>
+  <circle cx="16" cy="48" r="5" fill="#5b8dee"/>
+  <circle cx="48" cy="32" r="5" fill="#3ec776"/>
+  <path d="M16 16 L16 48" stroke="#5b8dee" stroke-width="3" fill="none"/>
+  <path d="M16 32 L40 32" stroke="#5b8dee" stroke-width="3" fill="none"/>
+  <path d="M40 32 A8 8 0 1 1 40 31.9" stroke="#3ec776" stroke-width="3" fill="none" stroke-linecap="round" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3ec776"/>
+    </marker>
+  </defs>
+</svg>

@@ -1,0 +1,70 @@
+---
+import { nav, githubUrl, docs, siteTitle } from '../data/site';
+---
+<header class="sticky top-0 z-50 border-b border-border bg-bg/90 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+    <a href="#main" class="flex items-center gap-2 font-semibold tracking-tight text-ink">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="12" fill="#121317"/>
+        <circle cx="16" cy="16" r="5" fill="#5b8dee"/>
+        <circle cx="16" cy="48" r="5" fill="#5b8dee"/>
+        <circle cx="48" cy="32" r="5" fill="#3ec776"/>
+        <path d="M16 16 L16 48" stroke="#5b8dee" stroke-width="3" fill="none"/>
+        <path d="M16 32 L40 32" stroke="#5b8dee" stroke-width="3" fill="none"/>
+      </svg>
+      <span>{siteTitle}</span>
+    </a>
+
+    <nav class="hidden items-center gap-6 text-sm text-muted md:flex" aria-label="Primary">
+      {nav.map((item) => (
+        <a href={item.href} class="hover:text-ink transition-colors">{item.label}</a>
+      ))}
+      <a href={docs.integrationContract} class="hover:text-ink transition-colors">Docs</a>
+    </nav>
+
+    <div class="hidden items-center gap-3 md:flex">
+      <a href={docs.researchProposal} class="rounded-md border border-border px-3 py-1.5 text-sm text-ink hover:border-recorded transition-colors">Read the Research</a>
+      <a href={githubUrl} class="rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-bg hover:bg-white transition-colors">View on GitHub</a>
+    </div>
+
+    <button id="menu-toggle" type="button" class="inline-flex items-center justify-center rounded-md border border-border p-2 text-ink md:hidden" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle navigation menu">
+      <svg id="menu-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg id="menu-icon-close" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <nav id="mobile-nav" class="hidden flex-col gap-1 border-t border-border bg-bg px-4 py-3 md:hidden" aria-label="Mobile">
+    {nav.map((item) => (
+      <a href={item.href} class="rounded-md px-2 py-2 text-sm text-muted hover:bg-surface hover:text-ink">{item.label}</a>
+    ))}
+    <a href={docs.integrationContract} class="rounded-md px-2 py-2 text-sm text-muted hover:bg-surface hover:text-ink">Docs</a>
+    <a href={docs.researchProposal} class="rounded-md px-2 py-2 text-sm text-muted hover:bg-surface hover:text-ink">Read the Research</a>
+    <a href={githubUrl} class="mt-1 rounded-md bg-ink px-2 py-2 text-center text-sm font-medium text-bg">View on GitHub</a>
+  </nav>
+</header>
+
+<script>
+  const toggle = document.getElementById('menu-toggle');
+  const mobileNav = document.getElementById('mobile-nav');
+  const iconOpen = document.getElementById('menu-icon-open');
+  const iconClose = document.getElementById('menu-icon-close');
+
+  toggle?.addEventListener('click', () => {
+    const isHidden = mobileNav?.classList.contains('hidden');
+    mobileNav?.classList.toggle('hidden');
+    mobileNav?.classList.toggle('flex');
+    iconOpen?.classList.toggle('hidden');
+    iconClose?.classList.toggle('hidden');
+    toggle.setAttribute('aria-expanded', String(!!isHidden));
+  });
+
+  mobileNav?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      mobileNav.classList.add('hidden');
+      mobileNav.classList.remove('flex');
+      iconOpen?.classList.remove('hidden');
+      iconClose?.classList.add('hidden');
+      toggle?.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>

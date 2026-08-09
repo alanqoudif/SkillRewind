@@ -1,0 +1,125 @@
+---
+// Signature hero visual: animated lineage graph stepping through the recover -> replay ->
+// revoke -> rebuild -> verify -> attest lifecycle. Pure SVG/CSS, respects
+// prefers-reduced-motion via a static final-state fallback (see global.css).
+---
+<figure class="relative mx-auto w-full max-w-2xl" aria-labelledby="lineage-graph-title">
+  <svg viewBox="0 0 640 320" class="w-full" role="img" aria-labelledby="lineage-graph-title lineage-graph-desc">
+    <title id="lineage-graph-title">Lineage graph: recorded edges, a hidden candidate, counterfactual replay, quarantine, and a verified successor</title>
+    <desc id="lineage-graph-desc">
+      Experience derives Skill A, which derives Skill B, which derives Procedure C — all recorded edges.
+      A dashed edge suggests Skill A may have also influenced a Hidden Skill D. Counterfactual replay tests
+      that edge; once replay-confirmed, Hidden Skill D is quarantined, rebuilt from clean support, verified,
+      and republished as a verified successor with a signed attestation.
+    </desc>
+
+    <!-- recorded edges -->
+    <g stroke="#5b8dee" stroke-width="2.5" fill="none" class="lg-edge lg-edge-1">
+      <path d="M70,60 L200,60" />
+    </g>
+    <g stroke="#5b8dee" stroke-width="2.5" fill="none" class="lg-edge lg-edge-2">
+      <path d="M240,60 L370,60" />
+    </g>
+    <g stroke="#5b8dee" stroke-width="2.5" fill="none" class="lg-edge lg-edge-3">
+      <path d="M410,60 L540,60" />
+    </g>
+
+    <!-- hidden candidate edge (dashed, amber) -->
+    <g stroke="#e0a730" stroke-width="2.5" fill="none" stroke-dasharray="6 6" class="lg-edge lg-edge-hidden">
+      <path d="M220,74 L420,190" />
+    </g>
+
+    <!-- replay pulse along hidden edge -->
+    <circle r="5" fill="#e9eaec" class="lg-pulse">
+      <animateMotion dur="6s" repeatCount="indefinite" begin="2.4s" path="M220,74 L420,190" />
+    </circle>
+
+    <!-- quarantine ring around Hidden Skill D -->
+    <circle cx="440" cy="200" r="26" fill="none" stroke="#c96a6a" stroke-width="2" stroke-dasharray="4 4" class="lg-quarantine" />
+
+    <!-- rebuild arrow: Hidden D -> successor -->
+    <g stroke="#3ec776" stroke-width="2.5" fill="none" class="lg-edge lg-rebuild">
+      <path d="M440,226 L440,270" marker-end="url(#lg-arrow)" />
+    </g>
+
+    <defs>
+      <marker id="lg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#3ec776" />
+      </marker>
+    </defs>
+
+    <!-- nodes -->
+    <g class="lg-node lg-node-1">
+      <circle cx="50" cy="60" r="20" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+      <text x="50" y="95" text-anchor="middle" font-size="13" fill="#c9cdd3">Experience</text>
+    </g>
+    <g class="lg-node lg-node-2">
+      <circle cx="220" cy="60" r="20" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+      <text x="220" y="95" text-anchor="middle" font-size="13" fill="#c9cdd3">Skill A</text>
+    </g>
+    <g class="lg-node lg-node-3">
+      <circle cx="390" cy="60" r="20" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+      <text x="390" y="95" text-anchor="middle" font-size="13" fill="#c9cdd3">Skill B</text>
+    </g>
+    <g class="lg-node lg-node-4">
+      <circle cx="560" cy="60" r="20" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+      <text x="560" y="95" text-anchor="middle" font-size="13" fill="#c9cdd3">Procedure C</text>
+    </g>
+
+    <g class="lg-node lg-node-hidden">
+      <circle cx="440" cy="200" r="20" fill="#191b20" stroke="#e0a730" stroke-width="2" class="lg-hidden-ring" />
+      <text x="440" y="235" text-anchor="middle" font-size="13" fill="#c9cdd3">Hidden Skill D</text>
+      <text x="440" y="250" text-anchor="middle" font-size="10" fill="#8a8f98" class="lg-hidden-label">inferred</text>
+    </g>
+
+    <g class="lg-node lg-successor">
+      <circle cx="440" cy="290" r="20" fill="#191b20" stroke="#3ec776" stroke-width="2" />
+      <path d="M432,290 l6,6 l10,-13" stroke="#3ec776" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="440" y="315" text-anchor="middle" font-size="11" fill="#8a8f98">verified successor</text>
+    </g>
+  </svg>
+
+  <figcaption class="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted">
+    <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-recorded"></span>recorded</span>
+    <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-inferred"></span>inferred</span>
+    <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-confirmed"></span>replay-confirmed</span>
+    <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-rejected"></span>quarantine</span>
+  </figcaption>
+</figure>
+
+<style>
+  .lg-edge, .lg-node, .lg-quarantine, .lg-pulse, .lg-hidden-ring, .lg-hidden-label {
+    opacity: 1;
+  }
+
+  /* Step choreography — a slow, looping 12s cycle. */
+  .lg-edge-1, .lg-edge-2, .lg-edge-3 { stroke-dasharray: 140; stroke-dashoffset: 140; animation: lg-draw 12s ease-in-out infinite; }
+  .lg-edge-2 { animation-delay: 0.3s; }
+  .lg-edge-3 { animation-delay: 0.6s; }
+
+  .lg-edge-hidden { opacity: 0; animation: lg-appear 12s ease-in-out infinite; animation-delay: 1.5s; }
+  .lg-pulse { opacity: 0; }
+
+  .lg-hidden-ring { animation: lg-hidden-pulse 12s ease-in-out infinite; }
+  .lg-quarantine { opacity: 0; animation: lg-quarantine-in 12s ease-in-out infinite; }
+  .lg-rebuild { opacity: 0; stroke-dasharray: 50; stroke-dashoffset: 50; animation: lg-rebuild-draw 12s ease-in-out infinite; }
+  .lg-successor circle:first-child { opacity: 0.3; animation: lg-successor-in 12s ease-in-out infinite; }
+  .lg-successor path { opacity: 0; animation: lg-successor-check 12s ease-in-out infinite; }
+  .lg-successor text { opacity: 0.3; animation: lg-successor-in 12s ease-in-out infinite; }
+
+  @keyframes lg-draw { 0% { stroke-dashoffset: 140; } 15%, 100% { stroke-dashoffset: 0; } }
+  @keyframes lg-appear { 0%, 18% { opacity: 0; } 26%, 55% { opacity: 1; } 65%, 100% { opacity: 0.35; } }
+  @keyframes lg-hidden-pulse { 0%, 40% { stroke: #e0a730; } 55%, 78% { stroke: #3ec776; } 85%, 100% { stroke: #c96a6a; } }
+  @keyframes lg-quarantine-in { 0%, 54% { opacity: 0; } 60%, 82% { opacity: 1; } 90%, 100% { opacity: 0.4; } }
+  @keyframes lg-rebuild-draw { 0%, 75% { opacity: 0; stroke-dashoffset: 50; } 82% { opacity: 1; } 92%, 100% { opacity: 1; stroke-dashoffset: 0; } }
+  @keyframes lg-successor-in { 0%, 80% { opacity: 0.25; } 92%, 100% { opacity: 1; } }
+  @keyframes lg-successor-check { 0%, 88% { opacity: 0; } 96%, 100% { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lg-edge-1, .lg-edge-2, .lg-edge-3, .lg-edge-hidden, .lg-rebuild { animation: none; stroke-dashoffset: 0; opacity: 1; }
+    .lg-pulse { display: none; }
+    .lg-quarantine { animation: none; opacity: 1; }
+    .lg-hidden-ring { animation: none; stroke: #3ec776; }
+    .lg-successor circle:first-child, .lg-successor text, .lg-successor path { animation: none; opacity: 1; }
+  }
+</style>
