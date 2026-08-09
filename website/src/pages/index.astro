@@ -1,0 +1,566 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import LineageGraph from '../components/LineageGraph.astro';
+import { githubUrl, docs, status } from '../data/site';
+---
+<BaseLayout>
+  <Header />
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="relative overflow-hidden border-b border-border">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24">
+        <div>
+          <span class="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+            <span class="h-1.5 w-1.5 rounded-full bg-inferred"></span>
+            {status.label} · {status.version}
+          </span>
+
+          <h1 class="mt-5 text-4xl font-semibold leading-tight tracking-tight text-ink sm:text-5xl">
+            Persistent AI-agent learning, built to be <span class="text-recorded">reversed</span>.
+          </h1>
+
+          <p class="mt-5 max-w-xl text-lg text-muted">
+            AI agents accumulate skills, memories, and procedures that outlive any single session. When one of
+            those artifacts turns out to be poisoned, stale, or simply wrong, deleting the source is not enough —
+            its influence can already be baked into descendants. SkillRewind makes that influence traceable,
+            testable, revocable, and — within a declared boundary — rebuildable and verifiable.
+          </p>
+
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href={githubUrl} class="rounded-md bg-ink px-4 py-2.5 text-sm font-medium text-bg hover:bg-white transition-colors">View on GitHub</a>
+            <a href={docs.researchProposal} class="rounded-md border border-border px-4 py-2.5 text-sm font-medium text-ink hover:border-recorded transition-colors">Read the Research</a>
+            <a href={docs.integrationContract} class="rounded-md border border-border px-4 py-2.5 text-sm font-medium text-ink hover:border-recorded transition-colors">Explore the Integration Contract</a>
+          </div>
+        </div>
+
+        <LineageGraph />
+      </div>
+
+      <!-- status strip -->
+      <div class="border-t border-border bg-surface">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-4 text-xs text-muted sm:px-6">
+          <span>License: <span class="text-ink">{status.license}</span></span>
+          <span>Python: <span class="text-ink">{status.pythonRequires}</span></span>
+          <span>Stage: <span class="text-ink">Alpha</span></span>
+          <span>Deployment: <span class="text-ink">Self-hosted</span></span>
+          <span>Source: <span class="text-ink">Open source</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Deleting the source is not enough</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          Self-evolving agents distill trajectories, memories, tool interactions, and documents into persistent
+          skills. Deleting a poisoned or obsolete source does not necessarily remove its effect: later skills may
+          preserve the behavior after paraphrasing instructions, rewriting code, changing tools, or passing
+          through multiple generations — and the influence edge back to the source is often never recorded.
+        </p>
+
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
+          <div class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="text-sm font-semibold text-rejected">Traditional deletion</h3>
+            <p class="mt-2 text-sm text-muted">Remove the source artifact. Everything downstream that inherited its behavior — through paraphrase, refactor, or multi-hop transformation — keeps running unexamined.</p>
+            <div class="mt-4 flex items-center gap-2 text-xs text-muted" aria-hidden="true">
+              <span class="rounded border border-border bg-surface2 px-2 py-1">source</span>
+              <span>✕</span>
+              <span class="rounded border border-rejected/50 bg-surface2 px-2 py-1 text-rejected">hidden descendant</span>
+              <span class="text-rejected">still active</span>
+            </div>
+          </div>
+          <div class="rounded-lg border border-border bg-surface p-6">
+            <h3 class="text-sm font-semibold text-confirmed">SkillRewind</h3>
+            <p class="mt-2 text-sm text-muted">Recover plausible hidden influence, test selected relationships through counterfactual replay, quarantine confirmed or high-risk descendants, rebuild them from clean support, and verify safety and retained utility.</p>
+            <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted" aria-hidden="true">
+              <span class="rounded border border-border bg-surface2 px-2 py-1">detect</span>
+              <span class="rounded border border-border bg-surface2 px-2 py-1">recover</span>
+              <span class="rounded border border-border bg-surface2 px-2 py-1">test</span>
+              <span class="rounded border border-border bg-surface2 px-2 py-1">revoke</span>
+              <span class="rounded border border-border bg-surface2 px-2 py-1">rebuild</span>
+              <span class="rounded border border-confirmed/50 bg-surface2 px-2 py-1 text-confirmed">verify</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY THIS EXISTS -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">A behavioral supply chain</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          Persistent artifacts are the units this behavioral supply chain is made of. Influence between them is
+          <strong class="text-ink">semantic</strong> (a paraphrase, not a copy), <strong class="text-ink">transformed</strong>
+          (refactored code, restructured procedures), <strong class="text-ink">multi-hop</strong> (skill → skill →
+          procedure), and often <strong class="text-ink">incompletely recorded</strong> — the platform that
+          produced a descendant did not always log what it read.
+        </p>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ['Memory', 'A retained fact, preference, or observation carried across sessions.'],
+            ['Skill', 'A reusable capability distilled from experience (e.g. an Agent Skill directory).'],
+            ['Procedure', 'A distilled, repeatable multi-step process.'],
+            ['Tool Policy', 'A rule governing when/how a tool is invoked.'],
+            ['Generated Code', 'Code an agent wrote and kept for reuse.'],
+            ['Workflow', 'A composed sequence of steps/artifacts.'],
+            ['Prompt Patch', 'A persisted modification to a prompt/instruction set.'],
+            ['Configuration', 'Persisted agent-level settings artifacts.'],
+          ].map(([name, desc]) => (
+            <div class="rounded-lg border border-border bg-surface p-4">
+              <h3 class="text-sm font-semibold text-ink">{name}</h3>
+              <p class="mt-1.5 text-xs text-muted">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- EVIDENCE MODEL -->
+    <section id="evidence" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">The evidence model</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          SkillRewind never calls correlation causal. Every lineage edge carries one of five evidence classes, and
+          promotion between them preserves prior evidence rather than erasing it.
+        </p>
+        <p class="mt-2 font-mono text-sm text-ink">Inference is not provenance. Similarity is not causal proof.</p>
+
+        <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ['recorded', 'bg-recorded', 'Directly captured as an input or exposure at derivation time.'],
+            ['inferred', 'bg-inferred', 'Supported by static multi-trace scoring; not causal.'],
+            ['replay-confirmed', 'bg-confirmed', 'Supported by a paired intervention (present vs. withheld) within a declared replay boundary.'],
+            ['rejected', 'bg-rejected', 'Tested but not supported under the declared intervention and probes; not universal proof of no influence.'],
+            ['unresolved', 'bg-unresolved', 'Not replayable, inconclusive, outside budget, or outside coverage. A runner failure becomes unresolved, never rejected.'],
+          ].map(([name, color, desc]) => (
+            <div class="rounded-lg border border-border bg-surface p-4">
+              <div class="flex items-center gap-2">
+                <span class={`evidence-dot ${color}`} aria-hidden="true"></span>
+                <span class="font-mono text-sm text-ink">{name}</span>
+              </div>
+              <p class="mt-2 text-xs text-muted">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- LIFECYCLE -->
+    <section id="lifecycle" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">How it works</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          The full reversible-learning lifecycle SkillRewind's own end-to-end demo exercises.
+        </p>
+
+        <ol class="mt-10 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-stretch">
+          {[
+            ['Capture', 'Ingest artifacts and record derivations — the recorded evidence class.'],
+            ['Recover', 'Score bounded candidate neighborhoods for plausible hidden-lineage edges (inferred).'],
+            ['Replay', 'Paired present/withheld counterfactual intervention within a declared replay boundary.'],
+            ['Revoke', 'forensic / balanced / strict state-machine transitions; balanced/strict apply a barrier first.'],
+            ['Rebuild', 'Clean-room rebuild from a support set that excludes revoked, replay-confirmed, and un-waived quarantined ancestors.'],
+            ['Verify', 'Safety, utility-retention, and integrity checks produce a machine-readable report.'],
+            ['Attest', 'A bounded, optionally Ed25519-signed attestation records what happened and what remains unresolved.'],
+          ].map(([step, desc], i) => (
+            <li class="flex-1 rounded-lg border border-border bg-surface p-4 md:min-w-[13rem]">
+              <div class="font-mono text-xs text-recorded">{String(i + 1).padStart(2, '0')}</div>
+              <h3 class="mt-1 text-sm font-semibold text-ink">{step}</h3>
+              <p class="mt-1.5 text-xs text-muted">{desc}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- COUNTERFACTUAL REPLAY -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Counterfactual replay</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          An inferred candidate edge becomes testable: SkillRewind reconstructs the derivation and re-runs it
+          under a controlled intervention on one candidate ancestor.
+        </p>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-lg border border-border bg-surface p-4">
+            <h3 class="font-mono text-sm text-recorded">present</h3>
+            <p class="mt-2 text-xs text-muted">The candidate ancestor is included, as originally derived.</p>
+          </div>
+          <div class="rounded-lg border border-border bg-surface p-4">
+            <h3 class="font-mono text-sm text-inferred">withheld</h3>
+            <p class="mt-2 text-xs text-muted">The candidate ancestor is removed from the reconstructed input.</p>
+          </div>
+          <div class="rounded-lg border border-border bg-surface p-4">
+            <h3 class="font-mono text-sm text-muted">clean-control</h3>
+            <p class="mt-2 text-xs text-muted">A control run establishes baseline behavior for comparison.</p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap gap-4 text-sm">
+          <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-confirmed"></span> replay-confirmed</span>
+          <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-rejected"></span> replay-rejected</span>
+          <span class="inline-flex items-center gap-1.5"><span class="evidence-dot bg-unresolved"></span> unresolved</span>
+        </div>
+
+        <p class="mt-6 max-w-3xl text-sm text-muted">
+          Replay evidence is bounded by the runner, environment, probes, fidelity report, and configuration used
+          to produce it — never treated as universal proof. A runner failure always classifies as
+          <span class="font-mono text-ink">unresolved</span>, never <span class="font-mono text-ink">rejected</span>.
+          The only two replay runners shipped today are an in-process deterministic-fixture runner and a
+          sandboxed subprocess runner with resource limits but <strong class="text-ink">no network-namespace
+          isolation</strong> — see the Threat Model.
+        </p>
+      </div>
+    </section>
+
+    <!-- REVOCATION -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Block first. Repair second.</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          Under <span class="font-mono text-ink">balanced</span> or <span class="font-mono text-ink">strict</span>
+          policy, a revocation applies a barrier before candidate recovery even begins: revoked roots and their
+          recorded descendants stop serving immediately, independent of how long recovery and replay take.
+          <span class="font-mono text-ink">forensic</span> mode never mutates serving state.
+        </p>
+
+        <div class="mt-10 flex flex-wrap items-center gap-3 text-sm" aria-label="Revocation flow">
+          {['confirmed', 'barrier', 'quarantine', 'rebuild', 'verify', 'successor'].map((step, i, arr) => (
+            <>
+              <span class="rounded-full border border-border bg-surface px-3 py-1.5 text-ink">{step}</span>
+              {i < arr.length - 1 && <span class="text-muted" aria-hidden="true">→</span>}
+            </>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ATTESTATION -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">A bounded, verifiable record</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          Every revocation ends in an attestation with a fixed, versioned schema (<a class="text-recorded underline" href={docs.attestationSchema}>revocation-attestation.schema.json</a>).
+          Its fields are generated from persisted event/edge/replay state — never hand-written — and its
+          <span class="font-mono text-ink">bounded_claims</span> are narrow by construction: no claim of
+          foundation-model unlearning, no claim of universal causal attribution.
+        </p>
+
+        <pre class="mt-8 overflow-x-auto rounded-lg border border-border bg-surface2 p-4 font-mono text-xs leading-relaxed text-muted"><code>{`{
+  "schema_version": "0.1",
+  "event_id": "revocation-2f9a...",
+  "mode": "balanced",
+  "revoked_roots": ["skill://poisoned-source@sha256:..."],
+  "recorded_closure": ["skill://skill-a@sha256:..."],
+  "inferred_candidates": [{ "source": "...", "target": "...", "confidence": 0.82 }],
+  "replay_confirmed": [{ "source": "...", "target": "skill://hidden-d@sha256:..." }],
+  "quarantined": ["skill://hidden-d@sha256:..."],
+  "rebuilt": [{ "old_artifact_id": "...", "new_artifact_id": "...", "verification_status": "passed" }],
+  "unresolved": [],
+  "verification": { "status": "passed", "suite_ids": ["safety", "utility"], "target_behavior_observed": false },
+  "bounded_claims": [
+    "This attestation makes no claim about foundation-model parameters or weights.",
+    "Inferred edges are explainable static scoring, not causal proof."
+  ],
+  "signature": { "algorithm": "ed25519", "key_id": "...", "value": "..." }
+}`}</code></pre>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Self-hosted, platform-agnostic</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          SkillRewind runs as an independent HTTP service. Your agent platform reports artifacts and derivations,
+          asks a resolution question before serving, and — at full integration — hands off replay and rebuild.
+        </p>
+
+        <div class="mt-8 overflow-x-auto rounded-lg border border-border bg-surface p-6">
+          <div class="flex min-w-[720px] flex-wrap items-center gap-2 font-mono text-xs text-muted" aria-label="Architecture flow">
+            {['Your AI Platform', 'SkillRewind API', 'Lineage / Replay / Resolver', 'Revocation', 'Quarantine', 'Rebuild', 'Verification', 'Successor', 'Attestation'].map((step, i, arr) => (
+              <>
+                <span class="rounded border border-border bg-surface2 px-2.5 py-1.5 text-ink">{step}</span>
+                {i < arr.length - 1 && <span aria-hidden="true">→</span>}
+              </>
+            ))}
+          </div>
+        </div>
+
+        <ul class="mt-8 grid gap-3 sm:grid-cols-2">
+          {[
+            'Open source (Apache-2.0).',
+            'Self-hosted — you run the database, CAS root, and signing key.',
+            'PostgreSQL integration is exercised in GitHub Actions CI, alongside SQLite for Lite mode.',
+            'Model-agnostic — SkillRewind never inspects artifact content semantics.',
+            'No mandatory telemetry beyond what you configure.',
+          ].map((item) => (
+            <li class="flex items-start gap-2 text-sm text-muted"><span class="mt-1 text-confirmed" aria-hidden="true">✓</span>{item}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- SPECIFICATION -->
+    <section id="specification" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Beyond one implementation</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          SkillRewind is a specification with a reference implementation, not just a library. The specification
+          layer is an emerging draft — versioned separately from the reference implementation's release cadence.
+        </p>
+
+        <div class="mt-10 flex flex-wrap items-stretch gap-3">
+          {[
+            ['Research Foundation', 'A research proposal grounding the hidden-lineage-revocation problem.', 'Draft'],
+            ['SkillRewind Specification', 'Artifact/edge/attestation JSON Schemas + the integration contract.', 'Draft / emerging'],
+            ['Reference Implementation', 'This repository: CLI (Lite mode) + Service-mode HTTP API.', 'v0.3.0a1'],
+            ['Conformance', '`skillrewind conformance describe` / `self-test` prove the API meets its own contract.', 'Implemented'],
+          ].map(([title, desc, tag]) => (
+            <div class="min-w-[13rem] flex-1 rounded-lg border border-border bg-surface p-4">
+              <span class="inline-block rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">{tag}</span>
+              <h3 class="mt-2 text-sm font-semibold text-ink">{title}</h3>
+              <p class="mt-1.5 text-xs text-muted">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <a href={docs.integrationContract} class="mt-8 inline-block rounded-md border border-border px-4 py-2.5 text-sm font-medium text-ink hover:border-recorded transition-colors">Explore the Integration Contract</a>
+
+        <h3 class="mt-14 text-lg font-semibold text-ink">Integration levels</h3>
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+          {[
+            ['Level 1 — Audit', 'Artifact ingestion, derivation capture, lineage read. SkillRewind analyzes provenance; nothing is blocked.'],
+            ['Level 2 — Enforcement', 'Adds the resolution gate and quarantine/revocation enforcement — revoked/quarantined is a hard, binding denial.'],
+            ['Level 3 — Full Rewind', 'Adds replay, rebuild, verification, successor publication, and attestation — the complete lifecycle.'],
+          ].map(([title, desc]) => (
+            <div class="rounded-lg border border-border bg-surface p-5">
+              <h4 class="text-sm font-semibold text-ink">{title}</h4>
+              <p class="mt-2 text-xs text-muted">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- RESEARCH -->
+    <section id="research" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Research</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          To the best of our knowledge, based on the literature reviewed for this project, hidden-lineage
+          revocation for persistent agent artifacts — recovering influence that was never recorded, then testing
+          it through a controlled counterfactual intervention rather than similarity alone — has not been
+          addressed as a unified, implemented system elsewhere. This is a research proposal, not a claim of
+          priority or a published, peer-reviewed result.
+        </p>
+
+        <div class="mt-8 rounded-lg border border-border bg-surface p-6">
+          <svg viewBox="0 0 320 120" class="w-full max-w-md" role="img" aria-label="Diagram: A derives B, a recorded edge; A may also have influenced C, a hidden and unrecorded edge">
+            <circle cx="30" cy="60" r="18" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+            <text x="30" y="65" text-anchor="middle" font-size="12" fill="#e9eaec">A</text>
+            <path d="M48,60 L142,60" stroke="#5b8dee" stroke-width="2.5" marker-end="url(#r-arrow)" />
+            <circle cx="160" cy="60" r="18" fill="#191b20" stroke="#5b8dee" stroke-width="2" />
+            <text x="160" y="65" text-anchor="middle" font-size="12" fill="#e9eaec">B</text>
+            <path d="M40,74 L280,95" stroke="#e0a730" stroke-width="2" stroke-dasharray="5 5" />
+            <circle cx="290" cy="98" r="18" fill="#191b20" stroke="#e0a730" stroke-width="2" />
+            <text x="290" y="103" text-anchor="middle" font-size="12" fill="#e9eaec">C</text>
+            <text x="160" y="20" text-anchor="middle" font-size="10" fill="#9aa0aa">recorded</text>
+            <text x="220" y="115" text-anchor="middle" font-size="10" fill="#9aa0aa">hidden / unrecorded</text>
+            <defs>
+              <marker id="r-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="#5b8dee" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <a href={docs.researchProposal} class="mt-8 inline-block rounded-md border border-border px-4 py-2.5 text-sm font-medium text-ink hover:border-recorded transition-colors">Research Proposal (PDF)</a>
+      </div>
+    </section>
+
+    <!-- REWINDBENCH -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">RewindBench-core</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          A deterministic, reproducible benchmark generator/harness for hidden-lineage recovery, shipped in this
+          repository. <span class="font-mono text-ink">make bench-smoke</span> runs a real, offline 3-case
+          <span class="font-mono text-ink">smoke</span> preset — every number it produces is real output from the
+          harness, never fabricated, but sample sizes below 30 cases are explicitly reported as descriptive-only.
+        </p>
+
+        <div class="mt-8 overflow-x-auto">
+          <table class="w-full min-w-[560px] border-collapse text-sm">
+            <caption class="mb-2 text-left text-xs text-muted">Scenario families — implemented vs. planned (see STATUS.md)</caption>
+            <thead>
+              <tr class="border-b border-border text-left text-muted">
+                <th class="py-2 pr-4 font-medium">Scenario family</th>
+                <th class="py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['direct-inheritance', 'Implemented'],
+                ['semantic-laundering', 'Implemented'],
+                ['implementation-mutation', 'Implemented'],
+                ['procedural-inheritance', 'Planned'],
+                ['multi-hop-contamination', 'Planned'],
+                ['memory-to-skill-promotion', 'Planned'],
+                ['cross-model-distillation', 'Planned'],
+                ['compositional-influence', 'Planned'],
+              ].map(([name, s]) => (
+                <tr class="border-b border-border/60">
+                  <td class="py-2 pr-4 font-mono text-xs text-ink">{name}</td>
+                  <td class="py-2">
+                    <span class={`rounded-full px-2 py-0.5 text-xs ${s === 'Implemented' ? 'bg-confirmed/15 text-confirmed' : 'bg-unresolved/15 text-unresolved'}`}>{s}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-6 text-sm text-muted">
+          Baselines <span class="font-mono text-ink">delete-root</span>, <span class="font-mono text-ink">recorded-closure</span>,
+          <span class="font-mono text-ink">static-multitrace</span>, and <span class="font-mono text-ink">exhaustive-replay</span>
+          are all real and executable. No benchmark numbers are reproduced on this page — run <span class="font-mono text-ink">make bench-smoke</span> yourself.
+        </p>
+      </div>
+    </section>
+
+    <!-- DEVELOPER / QUICKSTART -->
+    <section id="developer" class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Get started</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          SkillRewind is not yet published on PyPI — install it from source. The reference package has
+          already passed a clean, wheel-only install validation (import, CLI, packaged Alembic
+          migrations, and the full conformance self-test, run outside the repository with no
+          <span class="font-mono text-ink">PYTHONPATH</span> dependency) and is being prepared for its
+          first alpha release.
+        </p>
+
+        <pre class="mt-8 overflow-x-auto rounded-lg border border-border bg-surface2 p-4 font-mono text-sm leading-relaxed text-ink"><code>{`$ git clone ${githubUrl}.git && cd SkillRewind
+$ make bootstrap-service   # uv venv + editable install with dev+service extras
+$ make demo                # runs the full poisoned-descendant scenario end to end (Lite mode)`}</code></pre>
+
+        <p class="mt-4 text-sm text-muted">
+          <span class="font-mono text-ink">make demo</span> initializes an isolated workspace at
+          <span class="font-mono text-ink"> .skillrewind-demo/</span>, ingests three Agent Skills directories,
+          recovers a hidden-lineage candidate that recorded closure misses, replay-confirms it, runs a
+          <span class="font-mono text-ink"> balanced</span> revocation, quarantines the confirmed descendant,
+          rebuilds and verifies a clean successor, republishes it under the original alias, and writes a signed
+          attestation. Reset it with <span class="font-mono text-ink">make demo-reset</span>.
+        </p>
+
+        <h3 class="mt-10 text-sm font-semibold text-ink">Minimal Service-mode API example</h3>
+        <pre class="mt-4 overflow-x-auto rounded-lg border border-border bg-surface2 p-4 font-mono text-sm leading-relaxed text-ink"><code>{`$ skillrewind serve --database-url sqlite:///./service.db --port 8000 &
+$ curl -s -X POST localhost:8000/api/v1/artifacts \\
+  -H "Authorization: Bearer $API_KEY" \\
+  --data-binary @my-skill.md \\
+  -G --data-urlencode kind=agent-skill --data-urlencode logical_name=my-skill
+
+$ curl -s localhost:8000/api/v1/artifacts/$ARTIFACT_ID/resolve -H "Authorization: Bearer $API_KEY"`}</code></pre>
+
+        <h3 class="mt-10 text-sm font-semibold text-ink">CLI (Lite mode)</h3>
+        <pre class="mt-4 overflow-x-auto rounded-lg border border-border bg-surface2 p-4 font-mono text-sm leading-relaxed text-ink"><code>{`$ skillrewind --workspace .skillrewind init
+$ skillrewind --workspace .skillrewind artifact-ingest-skill ./my-skill --alias my-skill
+$ skillrewind --workspace .skillrewind closure --root skill://my-skill@sha256:...
+$ skillrewind conformance describe
+$ skillrewind conformance self-test`}</code></pre>
+
+        <p class="mt-4 text-sm text-muted">
+          See <a class="text-recorded underline" href={docs.openapi}>docs/openapi-v1.json</a> for the full schema and
+          <a class="text-recorded underline" href={docs.apiStability}> docs/api-stability-v1.md</a> for what's safe to build against.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECURITY / INTEGRITY -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Security &amp; integrity</h2>
+        <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+          {[
+            ['Content-addressed artifacts', 'Every object is content-addressed by SHA-256; retrieval verifies the digest and raises on corruption or tampering rather than returning it silently.'],
+            ['Hash-chained audit log', 'The audit log detects any row whose content or chain linkage has been altered after the fact.'],
+            ['Signed attestations', 'An optional Ed25519 signature covers the attestation\'s canonical-JSON digest; both digest and signature tampering are independently detected.'],
+            ['Scoped API keys', 'Callers hold scoped keys (ingest/read/replay/revoke/waive/admin); revoked keys are rejected fresh on every request.'],
+          ].map(([title, desc]) => (
+            <li class="rounded-lg border border-border bg-surface p-5">
+              <h3 class="text-sm font-semibold text-ink">{title}</h3>
+              <p class="mt-2 text-xs text-muted">{desc}</p>
+            </li>
+          ))}
+        </ul>
+        <a href={docs.threatModel} class="mt-8 inline-block rounded-md border border-border px-4 py-2.5 text-sm font-medium text-ink hover:border-recorded transition-colors">Read the Threat Model</a>
+      </div>
+    </section>
+
+    <!-- LIMITATIONS -->
+    <section class="border-b border-border bg-surface py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">What SkillRewind does not currently claim</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">
+          Stated here prominently, not in footer text, because it matters as much as what the project does claim.
+        </p>
+        <ul class="mt-8 grid gap-3 sm:grid-cols-2">
+          {[
+            'Perfect unlearning or foundation-model weight/parameter erasure — SkillRewind revokes/rebuilds artifacts in its own store only.',
+            'Universal causal attribution — inferred edges are explainable static scoring, not proof; only replay-confirmed edges have been tested via controlled intervention.',
+            'Complete knowledge of hidden influence — recovery is bounded-neighborhood and best-effort, not exhaustive.',
+            'Safety outside the declared verification boundary — every verification report states its own limitations and is never empty.',
+            'Universal platform compatibility — integration requires a platform to implement the relevant Integration Contract responsibilities; there is no zero-config auto-discovery.',
+            'A hardened, container-grade arbitrary-code replay sandbox — the sandboxed subprocess runner has no network-namespace isolation.',
+          ].map((item) => (
+            <li class="flex items-start gap-2 rounded-lg border border-border bg-surface2 p-4 text-sm text-muted">
+              <span class="mt-0.5 text-rejected" aria-hidden="true">✕</span>{item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section class="border-b border-border py-20">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <h2 class="section-heading text-ink">Roadmap</h2>
+        <p class="mt-4 max-w-3xl text-muted prose-body">Based on STATUS.md's immediate next milestones — no fixed dates, no partnerships.</p>
+        <ol class="mt-8 space-y-4">
+          {[
+            'Expand RewindBench-core to the remaining five scenario families and the remaining three provenance-loss operators.',
+            'Build the offline calibration pipeline and re-derive the hidden-lineage scorer\'s default weights from it instead of hand-tuning.',
+            'Wire remaining Service-mode job handlers (revocation/replay/rebuild/verification/attestation progression) for full checkpoint-resumable async execution.',
+            'Web dashboard, Docker-based replay isolation, and packaged SDKs — not started.',
+          ].map((item, i) => (
+            <li class="flex gap-4">
+              <span class="font-mono text-sm text-muted">{String(i + 1).padStart(2, '0')}</span>
+              <p class="text-sm text-muted">{item}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="py-20">
+      <div class="mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <h2 class="section-heading text-ink">Read the code. Run the demo. Judge the evidence yourself.</h2>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a href={githubUrl} class="rounded-md bg-ink px-5 py-3 text-sm font-medium text-bg hover:bg-white transition-colors">View SkillRewind on GitHub</a>
+          <a href={docs.researchProposal} class="rounded-md border border-border px-5 py-3 text-sm font-medium text-ink hover:border-recorded transition-colors">Read the Research</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

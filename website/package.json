@@ -1,0 +1,23 @@
+{
+  "name": "skillrewind-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test:claims": "node ./scripts/check-claims.mjs"
+  },
+  "dependencies": {
+    "astro": "^4.16.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/tailwind": "^5.1.2",
+    "autoprefixer": "^10.4.20",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2"
+  }
+}

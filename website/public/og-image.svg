@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <title>SkillRewind — traceable, revocable, rebuildable persistent learning for AI agents</title>
+  <rect width="1200" height="630" fill="#0b0c0e"/>
+  <g stroke="#26292f" stroke-width="1">
+    <line x1="0" y1="150" x2="1200" y2="150"/>
+    <line x1="0" y1="480" x2="1200" y2="480"/>
+  </g>
+  <text x="80" y="220" font-family="Arial, sans-serif" font-size="64" font-weight="700" fill="#e9eaec">SkillRewind</text>
+  <text x="80" y="270" font-family="Arial, sans-serif" font-size="28" fill="#9aa0aa">Traceable, revocable, and rebuildable persistent learning for AI agents</text>
+
+  <g transform="translate(80,330)">
+    <circle cx="0" cy="40" r="9" fill="#5b8dee"/>
+    <text x="18" y="46" font-family="Arial, sans-serif" font-size="20" fill="#c9cdd3">Experience</text>
+    <line x1="90" y1="40" x2="220" y2="40" stroke="#5b8dee" stroke-width="2"/>
+    <circle cx="230" cy="40" r="9" fill="#5b8dee"/>
+    <text x="248" y="46" font-family="Arial, sans-serif" font-size="20" fill="#c9cdd3">Skill A</text>
+    <line x1="300" y1="40" x2="430" y2="40" stroke="#5b8dee" stroke-width="2"/>
+    <circle cx="440" cy="40" r="9" fill="#5b8dee"/>
+    <text x="458" y="46" font-family="Arial, sans-serif" font-size="20" fill="#c9cdd3">Skill B</text>
+    <line x1="230" y1="49" x2="600" y2="130" stroke="#e0a730" stroke-width="2" stroke-dasharray="6 6"/>
+    <circle cx="610" cy="140" r="9" fill="#e0a730"/>
+    <text x="628" y="146" font-family="Arial, sans-serif" font-size="20" fill="#c9cdd3">Hidden Skill D (inferred)</text>
+  </g>
+
+  <text x="80" y="560" font-family="Arial, sans-serif" font-size="22" fill="#8a8f98">github.com/alanqoudif/SkillRewind · Apache-2.0 · Alpha research preview</text>
+</svg>

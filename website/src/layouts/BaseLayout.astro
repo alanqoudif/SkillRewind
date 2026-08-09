@@ -1,0 +1,42 @@
+---
+import '../styles/global.css';
+import { siteTitle, siteDescription, siteUrl } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = siteTitle, description = siteDescription } = Astro.props;
+const pageTitle = title === siteTitle ? title : `${title} · ${siteTitle}`;
+const canonical = new URL(Astro.url.pathname, siteUrl).toString();
+const ogImage = new URL('/og-image.svg', siteUrl).toString();
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <meta name="theme-color" content="#0b0c0e" />
+  </head>
+  <body class="font-sans bg-bg text-ink antialiased">
+    <a href="#main" class="skip-link">Skip to content</a>
+    <slot />
+  </body>
+</html>
