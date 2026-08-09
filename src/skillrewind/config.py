@@ -58,6 +58,13 @@ class SkillRewindConfig:
     default_replay_budget_calls: int = 20
     strict_forbids_waivers: bool = True
     balanced_quarantine_unresolved_high_severity: bool = False
+    # Service-mode API settings (Phase C). api_auth_disabled must only ever be
+    # set true in an explicit Lite/dev deployment bound to a safe interface --
+    # /health/ready fails Service mode if it is true (master spec 8.5).
+    api_auth_disabled: bool = False
+    cors_allow_origins: str = ""  # comma-separated; empty = no CORS origins allowed
+    rate_limit_capacity: int = 60
+    rate_limit_refill_per_second: float = 1.0
 
     @property
     def db_path(self) -> str:

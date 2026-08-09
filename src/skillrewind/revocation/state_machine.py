@@ -12,6 +12,11 @@ from ..workspace import timestamp
 def transition(
     repo: RevocationRepository, event: RevocationEvent, to_state: RevocationState
 ) -> RevocationEvent:
+    if event.state == to_state:
+        # Re-entering the state we are already in is a no-op, not an error --
+        # this is what makes a resumed/retried job safe to call transition()
+        # again for a stage it already reached before a crash.
+        return event
     allowed = ALLOWED_TRANSITIONS.get(event.state, ())
     if to_state not in allowed:
         raise InvalidStateTransitionError(
