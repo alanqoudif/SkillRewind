@@ -169,6 +169,11 @@ class ReplayVerdict(str, Enum):
     UNRESOLVED_REPETITIONS = "unresolved-repetitions"
     UNRESOLVED_BUDGET = "unresolved-budget"
     UNRESOLVED_RUNNER_FAILURE = "unresolved-runner-failure"
+    #: Reconstruction inputs (e.g. the candidate's derivation) do not exist,
+    #: so no runner could even be invoked. Added for Service-mode replay
+    #: (Phase C2.2); like every other UNRESOLVED_* member, this must never be
+    #: conflated with REJECTED -- missing inputs prove nothing about influence.
+    UNRESOLVED_MISSING_INPUTS = "unresolved-missing-inputs"
 
 
 class InterventionKind(str, Enum):

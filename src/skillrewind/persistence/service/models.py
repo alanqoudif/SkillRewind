@@ -162,6 +162,15 @@ class CandidateScore(Base):
     explanation_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     inclusion_reasons_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Denormalized *pointers* to the latest replay outcome, maintained only by
+    # ReplayRepository.finalize_run -- never a substitute for the ReplayRun/
+    # ReplayRecord rows themselves, and never a rewrite of this row's own
+    # raw_score/feature_breakdown_json/evidence_class (Phase C2.2; see
+    # docs/adr/0012-service-replay-evidence.md, invariant 5: original inferred
+    # evidence is preserved, never overwritten, when replay evidence is added).
+    latest_replay_run_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    latest_replay_verdict: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    latest_replay_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("run_id", "candidate_artifact_id", name="uq_candidate_score_run_candidate"),
@@ -272,11 +281,58 @@ class ReplayRecord(Base):
     verdict: Mapped[str | None] = mapped_column(String(32), nullable=True)
     payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # Service-mode grouping (Phase C2.2): which ReplayRun this repetition's
+    # attempt belongs to, and which repetition index it is. NULL for rows
+    # written by the pre-existing Lite-mode-style single-attempt callers.
+    # Unique on (replay_run_id, repetition_index) is what makes
+    # checkpoint-resume idempotent: a repetition already persisted is simply
+    # skipped, never redone or duplicated.
+    replay_run_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    repetition_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (
         Index("ix_replay_target", "target_derivation_id"),
         Index("ix_replay_candidate", "candidate_ancestor_id"),
         Index("ix_replay_status", "verdict"),
+        Index("ix_replay_run", "replay_run_id"),
+        UniqueConstraint("replay_run_id", "repetition_index", name="uq_replay_run_repetition"),
+    )
+
+
+class ReplayRun(Base):
+    """A single submitted replay request against one `CandidateScore` (Phase
+    C2.2). Groups 1..N `ReplayRecord` repetitions and holds the atomic final
+    classification. Uniquely identified for idempotency by `request_key`
+    (candidate + runner + repetitions + an explicit Idempotency-Key, or a
+    deterministic digest of those) so resubmitting the same replay request
+    never creates a second run.
+    """
+
+    __tablename__ = "replay_runs"
+
+    replay_run_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    request_key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    candidate_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    ancestor_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    descendant_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    target_derivation_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    runner_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    repetitions_requested: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    job_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    checkpoint_repetition: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    verdict: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    fidelity_overall: Mapped[float | None] = mapped_column(Float, nullable=True)
+    effect_estimate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_by_actor: Mapped[str] = mapped_column(String(255), nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_replay_runs_candidate", "candidate_id"),
+        Index("ix_replay_runs_status", "status"),
+        Index("ix_replay_runs_actor", "created_by_actor"),
     )
 
 

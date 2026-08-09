@@ -25,7 +25,7 @@ from ..cas.local import LocalCAS
 from ..config import SkillRewindConfig, load_config
 from ..persistence.service.engine import build_engine
 from .ratelimit import RateLimiter
-from .routers import admin, artifacts, bench, candidates, derivations, events, health, jobs, lineage
+from .routers import admin, artifacts, bench, candidates, derivations, events, health, jobs, lineage, replay
 
 
 def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
@@ -80,6 +80,7 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     app.include_router(artifacts.router)
     app.include_router(lineage.router)
     app.include_router(candidates.router)
+    app.include_router(replay.router)
 
     @app.exception_handler(StarletteHTTPException)
     async def _problem_detail_handler(request, exc: StarletteHTTPException) -> JSONResponse:

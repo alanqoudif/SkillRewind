@@ -39,6 +39,8 @@ from .models import (
     DerivationInput,
     FeatureObservation,
     InfluenceEdge,
+    ReplayRecord,
+    ReplayRun,
 )
 
 _SCHEME_BY_KIND = {
@@ -816,3 +818,230 @@ class CandidateRepository:
         stmt = stmt.order_by(CandidateScore.raw_score.desc(), CandidateScore.candidate_artifact_id.asc())
         stmt = stmt.limit(limit).offset(offset)
         return list(self.session.execute(stmt).scalars())
+
+
+class ReplayRepository:
+    """Service-mode replay-run persistence (Phase C2.2): a `ReplayRun` groups
+    1..N `ReplayRecord` repetitions and holds the atomic final
+    classification. Never mutates the originating `CandidateScore` row's
+    score/feature-breakdown fields -- only a denormalized `latest_replay_*`
+    pointer on that row is updated at finalize time, and only a *new* `edges`
+    row (never an update to `candidate_scores`) represents a promotion to
+    `replay-confirmed`/`rejected`/`unresolved` evidence. See
+    `docs/adr/0012-service-replay-evidence.md`.
+    """
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def find_run_by_request_key(self, request_key: str) -> Optional[ReplayRun]:
+        return self.session.execute(select(ReplayRun).where(ReplayRun.request_key == request_key)).scalar_one_or_none()
+
+    def create_run(
+        self,
+        *,
+        replay_run_id: str,
+        request_key: str,
+        candidate_id: int,
+        ancestor_artifact_id: str,
+        descendant_artifact_id: str,
+        target_derivation_id: Optional[str],
+        runner_name: str,
+        repetitions_requested: int,
+        actor: str,
+        request_id: Optional[str] = None,
+    ) -> ReplayRun:
+        existing = self.find_run_by_request_key(request_key)
+        if existing is not None:
+            return existing
+        row = ReplayRun(
+            replay_run_id=replay_run_id,
+            request_key=request_key,
+            candidate_id=candidate_id,
+            ancestor_artifact_id=ancestor_artifact_id,
+            descendant_artifact_id=descendant_artifact_id,
+            target_derivation_id=target_derivation_id,
+            runner_name=runner_name,
+            repetitions_requested=repetitions_requested,
+            status="queued",
+            created_by_actor=actor,
+        )
+        self.session.add(row)
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # Lost a race with a concurrent submission of the same logical
+            # request -- return the winner's row rather than creating a
+            # second run.
+            self.session.rollback()
+            existing = self.find_run_by_request_key(request_key)
+            assert existing is not None
+            return existing
+        record_audit_event(
+            self.session,
+            event_type="replay.run_created",
+            actor=actor,
+            payload={"replay_run_id": replay_run_id, "candidate_id": candidate_id},
+            request_id=request_id,
+            entity_id=replay_run_id,
+        )
+        return row
+
+    def get_run(self, replay_run_id: str) -> ReplayRun:
+        row = self.session.get(ReplayRun, replay_run_id)
+        if row is None:
+            raise NotFoundError(f"no such replay run: {replay_run_id}")
+        return row
+
+    def set_run_job(self, replay_run_id: str, job_id: str) -> None:
+        row = self.get_run(replay_run_id)
+        row.job_id = job_id
+        row.status = "running"
+        self.session.commit()
+
+    def existing_repetitions(self, replay_run_id: str) -> set[int]:
+        stmt = select(ReplayRecord.repetition_index).where(ReplayRecord.replay_run_id == replay_run_id)
+        return {i for i in self.session.execute(stmt).scalars() if i is not None}
+
+    def add_repetition_record(
+        self,
+        *,
+        replay_run_id: str,
+        repetition_index: int,
+        replay_id: str,
+        target_derivation_id: Optional[str],
+        candidate_ancestor_id: str,
+        intervention_kind: str,
+        runner_id: Optional[str],
+        verdict: Optional[str],
+        payload: dict[str, Any],
+    ) -> Optional[ReplayRecord]:
+        """Idempotent on `(replay_run_id, repetition_index)`. Returns None if
+        this repetition was already recorded -- the resume path relies on
+        this to never duplicate a repetition's evidence."""
+
+        existing = self.session.execute(
+            select(ReplayRecord).where(
+                and_(ReplayRecord.replay_run_id == replay_run_id, ReplayRecord.repetition_index == repetition_index)
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            return None
+        row = ReplayRecord(
+            replay_id=replay_id,
+            target_derivation_id=target_derivation_id,
+            candidate_ancestor_id=candidate_ancestor_id,
+            intervention_kind=intervention_kind,
+            runner_id=runner_id,
+            verdict=verdict,
+            payload_json=payload,
+            replay_run_id=replay_run_id,
+            repetition_index=repetition_index,
+        )
+        self.session.add(row)
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            return None
+        return row
+
+    def list_repetitions(self, replay_run_id: str) -> list[ReplayRecord]:
+        stmt = (
+            select(ReplayRecord)
+            .where(ReplayRecord.replay_run_id == replay_run_id)
+            .order_by(ReplayRecord.repetition_index.asc())
+        )
+        return list(self.session.execute(stmt).scalars())
+
+    def update_checkpoint(self, replay_run_id: str, *, checkpoint_repetition: int) -> None:
+        row = self.get_run(replay_run_id)
+        row.checkpoint_repetition = checkpoint_repetition
+        self.session.commit()
+
+    def finalize_run(
+        self,
+        replay_run_id: str,
+        *,
+        status: str,
+        verdict: Optional[str] = None,
+        fidelity_overall: Optional[float] = None,
+        effect_estimate: Optional[float] = None,
+        error_message: Optional[str] = None,
+        promoted_evidence_class: Optional[str] = None,
+        actor: str = "worker",
+        request_id: Optional[str] = None,
+    ) -> ReplayRun:
+        """Atomically finalizes a replay run: updates the run row, the
+        denormalized `latest_replay_*` pointer on the originating
+        `CandidateScore` (never its score/breakdown fields), and -- when
+        `promoted_evidence_class` is given -- materializes exactly one new
+        `edges` row carrying that evidence class. All of this commits in a
+        single transaction, so a caller can never observe a run marked
+        `completed` whose promotion write did not also land (requirement:
+        "no endpoint may claim success before all database writes commit").
+        """
+
+        run = self.get_run(replay_run_id)
+        run.status = status
+        run.verdict = verdict
+        run.fidelity_overall = fidelity_overall
+        run.effect_estimate = effect_estimate
+        run.error_message = error_message
+        run.completed_at = _now()
+
+        candidate = self.session.get(CandidateScore, run.candidate_id)
+        if candidate is not None:
+            candidate.latest_replay_run_id = replay_run_id
+            candidate.latest_replay_verdict = verdict
+            candidate.latest_replay_at = run.completed_at
+
+        if promoted_evidence_class is not None:
+            existing_edge = self.session.execute(
+                select(InfluenceEdge).where(
+                    and_(
+                        InfluenceEdge.source == run.ancestor_artifact_id,
+                        InfluenceEdge.target == run.descendant_artifact_id,
+                        InfluenceEdge.relation == RelationType.HIDDEN_INFLUENCE.value,
+                    )
+                )
+            ).scalar_one_or_none()
+            now = _now()
+            if existing_edge is None:
+                self.session.add(
+                    InfluenceEdge(
+                        source=run.ancestor_artifact_id,
+                        target=run.descendant_artifact_id,
+                        relation=RelationType.HIDDEN_INFLUENCE.value,
+                        evidence_class=promoted_evidence_class,
+                        status="active",
+                        confidence=effect_estimate,
+                        payload_json={"replay_run_id": replay_run_id},
+                        created_at=now,
+                        updated_at=now,
+                    )
+                )
+            else:
+                # A prior replay attempt against the same pair already left
+                # an edge here (e.g. an earlier UNRESOLVED_* outcome). This
+                # replay's outcome supersedes it -- never silently keep a
+                # stale evidence class -- but the prior evidence entry is
+                # preserved in payload_json rather than discarded.
+                existing_edge.evidence_class = promoted_evidence_class
+                existing_edge.confidence = effect_estimate
+                existing_edge.updated_at = now
+                prior_runs = list(existing_edge.payload_json.get("prior_replay_run_ids", []))
+                if existing_edge.payload_json.get("replay_run_id") not in (None, replay_run_id):
+                    prior_runs.append(existing_edge.payload_json["replay_run_id"])
+                existing_edge.payload_json = {"replay_run_id": replay_run_id, "prior_replay_run_ids": prior_runs}
+
+        self.session.commit()
+        record_audit_event(
+            self.session,
+            event_type=f"replay.run_{status}",
+            actor=actor,
+            payload={"replay_run_id": replay_run_id, "verdict": verdict, "promoted_evidence_class": promoted_evidence_class},
+            request_id=request_id,
+            entity_id=replay_run_id,
+        )
+        return run

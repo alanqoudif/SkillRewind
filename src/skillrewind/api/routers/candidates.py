@@ -238,3 +238,39 @@ def get_candidate_explanation(
         "is_calibrated_probability": False,
         "evidence_class": row.evidence_class,
     }
+
+
+@router.get("/candidates/{candidate_id}/history")
+def get_candidate_history(
+    candidate_id: str, session: Session = Depends(get_session), _auth=Depends(require_scope("read"))
+) -> dict[str, Any]:
+    """Candidate history (Phase C2.2): the original inferred evidence
+    (unchanged, never overwritten by a replay outcome) plus a summary of
+    every replay run submitted against this candidate, newest first."""
+
+    from ...persistence.service.models import ReplayRun
+
+    repo = CandidateRepository(session)
+    try:
+        candidate_row = repo.get_candidate(int(candidate_id))
+    except (ValueError, NotFoundError):
+        raise ProblemDetail(404, "Not Found", f"no such candidate: {candidate_id}") from None
+
+    replay_runs = list(
+        session.query(ReplayRun).filter_by(candidate_id=candidate_row.id).order_by(ReplayRun.created_at.desc())
+    )
+    return {
+        "candidate": _candidate_to_dict(candidate_row),
+        "replay_runs": [
+            {
+                "replay_run_id": r.replay_run_id,
+                "status": r.status,
+                "verdict": r.verdict,
+                "runner_name": r.runner_name,
+                "repetitions_requested": r.repetitions_requested,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+            }
+            for r in replay_runs
+        ],
+    }

@@ -20,9 +20,11 @@ from pathlib import Path
 
 from ..cas.local import LocalCAS
 from ..config import SkillRewindConfig
+from ..domain.enums import EvidenceClass, ReplayVerdict
 from ..domain.errors import NotFoundError
 from ..lineage.service_recovery import run_candidate_recovery
 from ..persistence.service.engine import build_engine
+from ..replay.service_mode import VERDICT_TO_EVIDENCE_CLASS, build_domain_derivation, run_service_replay
 from ..revocation.service import run_revocation
 from ..workspace import Workspace
 from .errors import PermanentJobError, RetryableJobError
@@ -182,6 +184,135 @@ def run_lineage_recover_job(ctx: JobContext) -> str:
             should_cancel=_should_cancel,
         )
         return run_id
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@register_handler("lineage.replay")
+def run_lineage_replay_job(ctx: JobContext) -> str:
+    """Runs (or resumes) a Service-mode paired-replay run (see
+    `POST /api/v1/replay/runs`) via `skillrewind.replay.service_mode.
+    run_service_replay`, which itself reuses the existing intervention/
+    comparator/fidelity/statistics/runner-registry code unchanged.
+
+    Checkpoint-resumable: repetitions already persisted for this run are
+    reconstructed from their stored payload rather than re-executed (see
+    `run_service_replay`'s `already_done` parameter), so a crash between
+    repetitions and a naive retry never re-runs a repetition or duplicates
+    its evidence/audit events. Final classification (`ReplayRepository.
+    finalize_run`) commits the run status, the candidate's denormalized
+    replay pointer, and any promoted `edges` row in one transaction, so a
+    run is never observably `completed` with a missing promotion write.
+    """
+
+    from sqlalchemy.orm import Session
+
+    database_url = ctx.payload.get("database_url")
+    cas_root = ctx.payload.get("cas_root")
+    replay_run_id = ctx.payload.get("replay_run_id")
+    if not database_url or not cas_root or not replay_run_id:
+        raise PermanentJobError("lineage.replay requires 'database_url', 'cas_root', and 'replay_run_id'")
+
+    ctx.check_cancelled()
+    engine = build_engine(database_url)
+    config = SkillRewindConfig(mode="service", database_url=database_url, cas_root=cas_root)
+    session = Session(engine)
+    try:
+        from ..persistence.service.repositories import DerivationRepository, ReplayRepository
+
+        replays = ReplayRepository(session)
+        try:
+            run = replays.get_run(replay_run_id)
+        except NotFoundError as exc:
+            raise PermanentJobError(f"unknown replay_run_id {replay_run_id!r}: {exc}") from exc
+
+        if run.status in ("completed", "failed", "cancelled"):
+            # Already terminal (e.g. a naive retry of a completed job) --
+            # a complete no-op, never re-finalized or re-audited.
+            return replay_run_id
+
+        if run.target_derivation_id is None:
+            # The candidate's descendant had no recorded derivation at
+            # submission time -- reconstruction inputs simply do not exist.
+            # Invariant: this must classify as UNRESOLVED, never REJECTED
+            # (missing inputs prove nothing about influence), and it is a
+            # complete no-op on retry via the terminal-status check above.
+            replays.finalize_run(
+                replay_run_id,
+                status="completed",
+                verdict=ReplayVerdict.UNRESOLVED_MISSING_INPUTS.value,
+                fidelity_overall=0.0,
+                effect_estimate=None,
+                error_message="candidate's descendant has no recorded derivation to reconstruct",
+                promoted_evidence_class=EvidenceClass.UNRESOLVED.value,
+                actor=ctx.payload.get("actor", "worker"),
+                request_id=ctx.payload.get("request_id"),
+            )
+            return replay_run_id
+
+        derivations = DerivationRepository(session, None)  # type: ignore[arg-type]
+        try:
+            deriv_row = derivations.get(run.target_derivation_id)
+        except NotFoundError as exc:
+            raise PermanentJobError(f"derivation {run.target_derivation_id!r} vanished: {exc}") from exc
+        domain_derivation = build_domain_derivation(deriv_row, derivations.list_inputs(run.target_derivation_id))
+
+        already_done = {
+            r.repetition_index: r.payload_json
+            for r in replays.list_repetitions(replay_run_id)
+            if r.repetition_index is not None
+        }
+
+        def _persist(index: int, replay_id: str, verdict: str | None, payload: dict) -> None:
+            replays.add_repetition_record(
+                replay_run_id=replay_run_id,
+                repetition_index=index,
+                replay_id=replay_id,
+                target_derivation_id=run.target_derivation_id,
+                candidate_ancestor_id=run.ancestor_artifact_id,
+                intervention_kind="present-withheld-pair",
+                runner_id=run.runner_name,
+                verdict=verdict,
+                payload=payload,
+            )
+
+        def _checkpoint(index: int) -> None:
+            replays.update_checkpoint(replay_run_id, checkpoint_repetition=index)
+            ctx.heartbeat(current=index, total=run.repetitions_requested, message=f"completed repetition {index}/{run.repetitions_requested}")
+
+        def _should_cancel() -> bool:
+            return ctx.queue.is_cancellation_requested(ctx.job_id)
+
+        result = run_service_replay(
+            domain_derivation=domain_derivation,
+            ancestor_artifact_id=run.ancestor_artifact_id,
+            runner_name=run.runner_name,
+            repetitions_requested=run.repetitions_requested,
+            already_done=already_done,
+            config=config,
+            persist_repetition=_persist,
+            checkpoint=_checkpoint,
+            should_cancel=_should_cancel,
+        )
+
+        if result.cancelled:
+            replays.finalize_run(replay_run_id, status="cancelled", actor=ctx.payload.get("actor", "worker"))
+            return replay_run_id
+
+        promoted_class = VERDICT_TO_EVIDENCE_CLASS.get(result.verdict) if result.verdict else None
+        replays.finalize_run(
+            replay_run_id,
+            status="completed",
+            verdict=result.verdict.value if result.verdict else None,
+            fidelity_overall=result.fidelity_overall,
+            effect_estimate=result.effect_estimate,
+            error_message=result.error_message,
+            promoted_evidence_class=promoted_class,
+            actor=ctx.payload.get("actor", "worker"),
+            request_id=ctx.payload.get("request_id"),
+        )
+        return replay_run_id
     finally:
         session.close()
         engine.dispose()
