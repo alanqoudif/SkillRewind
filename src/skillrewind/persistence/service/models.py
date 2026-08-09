@@ -148,6 +148,7 @@ class CandidateScore(Base):
     __tablename__ = "candidate_scores"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     target_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
     candidate_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
     raw_score: Mapped[float] = mapped_column(Float, nullable=False)
@@ -156,11 +157,107 @@ class CandidateScore(Base):
     strict_negative: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     feature_breakdown_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     scorer_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_class: Mapped[str] = mapped_column(String(32), nullable=False, default="inferred")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="candidate")
+    explanation_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    inclusion_reasons_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     __table_args__ = (
+        UniqueConstraint("run_id", "candidate_artifact_id", name="uq_candidate_score_run_candidate"),
         Index("ix_candidate_scores_target", "target_artifact_id"),
         Index("ix_candidate_scores_candidate", "candidate_artifact_id"),
+        Index("ix_candidate_scores_run", "run_id"),
+    )
+
+
+class CandidateScoringRun(Base):
+    """A single invocation of candidate recovery against a root artifact.
+
+    Keyed for idempotency by ``request_key`` (derived from root + artifact
+    snapshot digest + scorer version + config digest, or an explicit
+    Idempotency-Key) so re-submitting the same recovery request never creates
+    a second run or duplicate candidates.
+    """
+
+    __tablename__ = "candidate_scoring_runs"
+
+    run_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    request_key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    root_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    candidate_scope_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    feature_config_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    threshold_config_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    scorer_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    config_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    job_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    candidates_considered: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    candidates_found: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    checkpoint_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_candidate_runs_root", "root_artifact_id"),
+        Index("ix_candidate_runs_status", "status"),
+    )
+
+
+class DerivationInput(Base):
+    """A recorded parent artifact of a derivation, with the exact relation type.
+
+    Materialized into a corresponding ``recorded`` row in ``edges`` once the
+    derivation's output artifact is known (``ArtifactRepository``/
+    ``DerivationRepository.set_output``) -- this table is the derivation-scoped
+    view, ``edges`` is the graph-traversal view; they are kept in lockstep by
+    the repository, never written independently.
+    """
+
+    __tablename__ = "derivation_inputs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    derivation_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    parent_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    relation: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    __table_args__ = (
+        UniqueConstraint("derivation_id", "parent_artifact_id", "relation", name="uq_derivation_input"),
+        Index("ix_derivation_inputs_derivation", "derivation_id"),
+        Index("ix_derivation_inputs_parent", "parent_artifact_id"),
+    )
+
+
+class FeatureObservation(Base):
+    """A single feature-family similarity observation between two artifacts,
+    persisted so extractor version / config digest are auditable and the
+    computation need not be repeated for the same (pair, extractor, config)."""
+
+    __tablename__ = "feature_observations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    target_artifact_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    feature_family: Mapped[str] = mapped_column(String(32), nullable=False)
+    value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    extractor_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    config_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "source_artifact_id",
+            "target_artifact_id",
+            "feature_family",
+            "extractor_version",
+            "config_digest",
+            name="uq_feature_observation",
+        ),
+        Index("ix_feature_observations_pair", "source_artifact_id", "target_artifact_id"),
     )
 
 

@@ -653,6 +653,16 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_service_import(args: argparse.Namespace) -> int:
+    from ..service_import import import_workspace
+
+    report = import_workspace(
+        args.workspace, database_url=args.database_url, cas_root=args.cas_root, dry_run=args.dry_run
+    )
+    _write_json(report.to_dict(), args.output)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="skillrewind",
@@ -800,6 +810,12 @@ def _build_parser() -> argparse.ArgumentParser:
     audit_export.set_defaults(func=_cmd_audit_export)
 
     add("resolve", _cmd_resolve, "Resolve a logical alias to its active artifact.", lambda p: p.add_argument("alias"))
+
+    add("service-import", _cmd_service_import, "Import a Lite-mode workspace's artifacts/recorded edges into Service mode.", lambda p: (
+        p.add_argument("--database-url", required=True),
+        p.add_argument("--cas-root", required=True),
+        p.add_argument("--dry-run", action="store_true"),
+    ))
 
     return parser
 

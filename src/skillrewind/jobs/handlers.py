@@ -18,7 +18,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ..cas.local import LocalCAS
+from ..config import SkillRewindConfig
 from ..domain.errors import NotFoundError
+from ..lineage.service_recovery import run_candidate_recovery
+from ..persistence.service.engine import build_engine
 from ..revocation.service import run_revocation
 from ..workspace import Workspace
 from .errors import PermanentJobError, RetryableJobError
@@ -118,3 +122,66 @@ def run_revocation_job(ctx: JobContext) -> str:
         return f"{event_id}:{result.state.value}"
     finally:
         ws.close()
+
+
+@register_handler("lineage.recover")
+def run_lineage_recover_job(ctx: JobContext) -> str:
+    """Runs (or resumes) Service-mode candidate recovery for an already-
+    created `CandidateScoringRun` (see `POST /api/v1/lineage/recovery-runs`)
+    via `skillrewind.lineage.service_recovery.run_candidate_recovery`.
+
+    Checkpoint-resumable: candidates already persisted for this run are
+    skipped on resume (idempotent insert in `CandidateRepository`), so a
+    crash between candidates and a naive retry never duplicates candidates
+    or audit events. Cancellation is checked between candidates -- a safe
+    checkpoint -- via the job queue's cancellation flag. Exception details
+    are redacted before persistence by the worker's failure path (see
+    `JobQueue.fail`, which runs every error message through the same
+    `Redactor` used elsewhere in this package).
+    """
+
+    from sqlalchemy.orm import Session
+
+    database_url = ctx.payload.get("database_url")
+    cas_root = ctx.payload.get("cas_root")
+    run_id = ctx.payload.get("run_id")
+    if not database_url or not cas_root or not run_id:
+        raise PermanentJobError("lineage.recover requires 'database_url', 'cas_root', and 'run_id'")
+
+    ctx.check_cancelled()
+    engine = build_engine(database_url)
+    cas = LocalCAS(cas_root)
+    config = SkillRewindConfig(mode="service", database_url=database_url, cas_root=cas_root)
+    session = Session(engine)
+    try:
+        from ..persistence.service.repositories import CandidateRepository
+
+        try:
+            CandidateRepository(session).get_run(run_id)
+        except NotFoundError as exc:
+            raise PermanentJobError(f"unknown recovery run_id {run_id!r}: {exc}") from exc
+
+        def _on_progress(progress) -> None:
+            ctx.heartbeat(
+                current=progress.considered,
+                total=progress.total,
+                message=f"considered {progress.considered}/{progress.total}, found {progress.found}",
+            )
+
+        def _should_cancel() -> bool:
+            return ctx.queue.is_cancellation_requested(ctx.job_id)
+
+        run_candidate_recovery(
+            session,
+            cas,
+            config,
+            run_id=run_id,
+            actor=ctx.payload.get("actor", "worker"),
+            request_id=ctx.payload.get("request_id"),
+            on_progress=_on_progress,
+            should_cancel=_should_cancel,
+        )
+        return run_id
+    finally:
+        session.close()
+        engine.dispose()
