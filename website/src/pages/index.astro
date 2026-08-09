@@ -298,6 +298,7 @@ import { githubUrl, docs, status } from '../data/site';
           {[
             'Open source (Apache-2.0).',
             'Self-hosted — you run the database, CAS root, and signing key.',
+            'PostgreSQL integration is exercised in GitHub Actions CI, alongside SQLite for Lite mode.',
             'Model-agnostic — SkillRewind never inspects artifact content semantics.',
             'No mandatory telemetry beyond what you configure.',
           ].map((item) => (
@@ -440,7 +441,11 @@ import { githubUrl, docs, status } from '../data/site';
       <div class="mx-auto max-w-6xl px-4 sm:px-6">
         <h2 class="section-heading text-ink">Get started</h2>
         <p class="mt-4 max-w-3xl text-muted prose-body">
-          SkillRewind is not yet published on PyPI — install it from source.
+          SkillRewind is not yet published on PyPI — install it from source. The reference package has
+          already passed a clean, wheel-only install validation (import, CLI, packaged Alembic
+          migrations, and the full conformance self-test, run outside the repository with no
+          <span class="font-mono text-ink">PYTHONPATH</span> dependency) and is being prepared for its
+          first alpha release.
         </p>
 
         <pre class="mt-8 overflow-x-auto rounded-lg border border-border bg-surface2 p-4 font-mono text-sm leading-relaxed text-ink"><code>{`$ git clone ${githubUrl}.git && cd SkillRewind
@@ -534,7 +539,6 @@ $ skillrewind conformance self-test`}</code></pre>
             'Expand RewindBench-core to the remaining five scenario families and the remaining three provenance-loss operators.',
             'Build the offline calibration pipeline and re-derive the hidden-lineage scorer\'s default weights from it instead of hand-tuning.',
             'Wire remaining Service-mode job handlers (revocation/replay/rebuild/verification/attestation progression) for full checkpoint-resumable async execution.',
-            'Live-validate the PostgreSQL path against a real server (currently schema/migration-reviewed only, not live-tested).',
             'Web dashboard, Docker-based replay isolation, and packaged SDKs — not started.',
           ].map((item, i) => (
             <li class="flex gap-4">
