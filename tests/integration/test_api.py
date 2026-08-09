@@ -47,15 +47,17 @@ def db_path(tmp_path):
 
 
 @pytest.fixture
-def config(db_path):
-    return SkillRewindConfig(mode="service", database_url=f"sqlite:///{db_path}")
+def config(db_path, tmp_path):
+    return SkillRewindConfig(mode="service", database_url=f"sqlite:///{db_path}", cas_root=str(tmp_path / "cas"))
 
 
 @pytest.fixture
-def dev_config(db_path):
+def dev_config(db_path, tmp_path):
     """Auth-disabled config -- explicit Lite/dev mode only, per spec 8.5."""
 
-    return SkillRewindConfig(mode="lite", database_url=f"sqlite:///{db_path}", api_auth_disabled=True)
+    return SkillRewindConfig(
+        mode="lite", database_url=f"sqlite:///{db_path}", api_auth_disabled=True, cas_root=str(tmp_path / "cas")
+    )
 
 
 @pytest.fixture

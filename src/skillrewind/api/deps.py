@@ -14,6 +14,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from ..cas.base import ContentAddressedStore
 from ..config import SkillRewindConfig
 from .auth import AuthenticatedKey, authenticate
 
@@ -24,6 +25,10 @@ def get_config(request: Request) -> SkillRewindConfig:
 
 def get_engine(request: Request) -> Engine:
     return request.app.state.engine
+
+
+def get_cas(request: Request) -> ContentAddressedStore:
+    return request.app.state.cas
 
 
 def get_session(request: Request) -> Iterator[Session]:

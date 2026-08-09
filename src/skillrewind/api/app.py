@@ -1,14 +1,13 @@
-"""FastAPI application factory for SkillRewind Service mode (Phase C, partial).
+"""FastAPI application factory for SkillRewind Service mode (Phase C/C2, partial).
 
-Only the endpoints backed by real, tested state are implemented: health/
-readiness, API-key administration, job management, and RewindBench-run
-submission through the real job queue built in Phase B. Artifact/lineage/
-revocation/replay/rebuild/attestation endpoints from the master spec's
-section 8.2 are NOT implemented here -- the Service-mode SQLAlchemy schema
-those would read/write (Phase A) currently has no writer for that data (see
-docs/adr/0009-service-mode-persistence.md and
-docs/completion-matrix-v0.3.md); shipping endpoints that always return empty
-results would violate this project's "no fake UI" rule.
+Endpoints backed by real, tested state: health/readiness, API-key
+administration, job management, RewindBench-run submission through the real
+job queue, and now artifact ingest/retrieval backed by a real SQLAlchemy
+repository + CAS (Phase C2). `revocation.execute` exists as a job handler
+(see `skillrewind.jobs.handlers`) but has no API endpoint yet.
+Lineage/candidate/replay/rebuild/verification/attestation endpoints from the
+master spec's section 8.2 are NOT implemented here yet -- see
+docs/completion-matrix-v0.3.md for what remains.
 """
 
 from __future__ import annotations
@@ -22,10 +21,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from ..cas.local import LocalCAS
 from ..config import SkillRewindConfig, load_config
 from ..persistence.service.engine import build_engine
 from .ratelimit import RateLimiter
-from .routers import admin, bench, events, health, jobs
+from .routers import admin, artifacts, bench, events, health, jobs
 
 
 def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
@@ -41,6 +41,7 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     app = FastAPI(title="SkillRewind API", version="v1", lifespan=_lifespan)
     app.state.config = cfg
     app.state.engine = build_engine(cfg.database_url)
+    app.state.cas = LocalCAS(cfg.resolved_cas_root, max_object_bytes=cfg.max_object_bytes)
     app.state.rate_limiter = RateLimiter(
         capacity=cfg.rate_limit_capacity, refill_per_second=cfg.rate_limit_refill_per_second
     )
@@ -69,6 +70,7 @@ def create_app(config: SkillRewindConfig | None = None) -> FastAPI:
     app.include_router(jobs.router)
     app.include_router(bench.router)
     app.include_router(events.router)
+    app.include_router(artifacts.router)
 
     @app.exception_handler(StarletteHTTPException)
     async def _problem_detail_handler(request, exc: StarletteHTTPException) -> JSONResponse:
