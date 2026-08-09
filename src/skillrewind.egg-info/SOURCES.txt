@@ -103,9 +103,16 @@ src/skillrewind/persistence/database.py
 src/skillrewind/persistence/repositories.py
 src/skillrewind/persistence/service/__init__.py
 src/skillrewind/persistence/service/engine.py
+src/skillrewind/persistence/service/migrations_runtime.py
 src/skillrewind/persistence/service/models.py
 src/skillrewind/persistence/service/repositories.py
 src/skillrewind/persistence/service/workspace.py
+src/skillrewind/persistence/service/migrations/README
+src/skillrewind/persistence/service/migrations/env.py
+src/skillrewind/persistence/service/migrations/script.py.mako
+src/skillrewind/persistence/service/migrations/versions/3d6450d37a15_initial_service_schema.py
+src/skillrewind/persistence/service/migrations/versions/b29242c5289a_derivation_lineage_evidence_and_.py
+src/skillrewind/persistence/service/migrations/versions/de2e581d5efc_service_replay_evidence_and_promotion.py
 src/skillrewind/quarantine/__init__.py
 src/skillrewind/quarantine/service.py
 src/skillrewind/quarantine/waivers.py

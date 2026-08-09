@@ -10,7 +10,7 @@ it is real, tested, and verified in this session — not when it merely exists.
 |---|---|---|---|---|
 | Lite core (CLI, SQLite workspace, CAS, audit) | complete | `src/skillrewind/workspace.py`, `tests/unit/`, `make demo` passes | — | — |
 | Service persistence (SQLAlchemy models/repositories) | complete | `src/skillrewind/persistence/service/`, exercised by all `tests/integration/test_service_*.py` | — | — |
-| Migrations (Alembic, SQLite-validated) | partial | 3 migrations apply cleanly against SQLite in every integration test fixture | Migrations are not packaged inside the wheel (live at repo-root `migrations/`, outside `src/skillrewind/`) — a pip-installed deployment must still check out the migrations directory separately | Package migrations as installable package data, or ship a `skillrewind db-migrate` command that carries its own migration resources |
+| Migrations (Alembic, SQLite-validated) | complete | 3 migrations apply cleanly against SQLite in every integration test fixture; packaged as data inside `skillrewind.persistence.service.migrations` (see `pyproject.toml`'s `[tool.setuptools.package-data]`) and driven via `importlib.resources` in `skillrewind.persistence.service.migrations_runtime`; `skillrewind db-upgrade`/`db-current` and `tests/smoke/clean_install_smoke.py` prove real Alembic history applies from a pip-installed wheel with no repo checkout | — | — |
 | CAS (content-addressed store) | complete | digest verification, corruption detection tested (`tests/unit/test_cas*.py` family) | — | — |
 | Auth (API keys, scopes, Argon2id hashing) | complete | `src/skillrewind/api/auth.py`, wrong-scope/revoked-key tests in `tests/integration/test_service_revocation_extras.py` and this milestone's new tests | — | — |
 | Durable worker / job queue | complete | `src/skillrewind/jobs/`, crash/resume test in `tests/integration/test_service_revocation_extras.py::test_service_mode_crash_mid_rebuild_then_resume_no_duplicates` | — | — |
@@ -33,7 +33,7 @@ it is real, tested, and verified in this session — not when it merely exists.
 | Event contract (canonical envelope) | partial | `docs/event-contract-v1.md` defines the envelope and type vocabulary | Not yet wired into the live SSE stream (see above); no webhook delivery exists | Wire the canonical envelope into SSE; webhook delivery is separate future work |
 | Conformance foundation | complete | `skillrewind.conformance` (describe + self-test), `skillrewind conformance describe`/`self-test` CLI, self-test passes 16/16 checks against the local API | — | — |
 | Reference adapter interfaces | complete | `skillrewind.adapters.protocols` (6 Protocols, no internal-class coupling, verified by `tests/unit/test_adapter_protocols.py`) + one deterministic reference adapter | — | — |
-| Clean install | complete | `make clean-install-smoke` builds a real wheel, installs into a fresh `uv`-managed venv, and exercises CLI/Lite/Service-instantiate/API flow with no repo `PYTHONPATH` dependency | See the Migrations row above — Service-mode schema is stood up via `create_all()` in the smoke test, not real Alembic history, because migrations aren't packaged | Package migrations (see above) |
+| Clean install | complete | `make clean-install-smoke` builds a real wheel, inspects it for the packaged migration files, installs into a fresh `uv`-managed venv, runs real Alembic migrations (`skillrewind db-upgrade`), and runs the full `skillrewind conformance self-test` -- all with no repo `PYTHONPATH` dependency | — | — |
 | PostgreSQL runtime | blocked | schema/ORM layer is dialect-portable; migrations + full CRUD paths run against SQLite in every test in this environment | No Docker daemon reachable in this development environment (`docker info` fails to connect) — 2 tests honestly skip with this exact reason | Run the full Service-mode test suite against a real PostgreSQL instance before any production claim |
 | Replay isolation | partial | deterministic + weak-subprocess-sandbox runners exist and are documented as such | No network-namespace-isolated (Docker) runner | Build a real isolated runner before accepting untrusted replay content from an external platform |
 | SDKs | not-started | reference Python adapter Protocols exist; no packaged Python or TypeScript SDK | — | Explicitly out of scope for this milestone per its own instructions |
@@ -109,9 +109,9 @@ milestone?**
   `docs/event-contract-v1.md` (they currently carry raw job-queue event names) — a platform building an
   `EventConsumer` today should treat the SSE payload shape as provisional until that re-mapping lands.
 - A platform that needs a from-scratch, pip-installed deployment (not this repository's checkout) can install
-  and run the CLI/Lite/Service-mode Python API today (`make clean-install-smoke` proves this), but must supply
-  its own copy of `migrations/`/`alembic.ini` (or use `create_all()` for schema bootstrap) until migrations are
-  packaged — see the Migrations row above.
+  and run the CLI/Lite/Service-mode Python API today, including real Alembic migrations via
+  `skillrewind db-upgrade` — no separate `migrations/`/`alembic.ini` checkout is required
+  (`make clean-install-smoke` proves this end to end, including the full conformance self-test).
 - PostgreSQL itself has not been live-validated in this environment (Docker unavailable) — a platform planning
   a PostgreSQL-backed deployment should validate against a real instance before going further than this
   milestone's SQLite-validated schema/ORM portability review.

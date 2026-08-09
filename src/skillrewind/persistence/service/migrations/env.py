@@ -1,14 +1,15 @@
 import os
-import sys
 from logging.config import fileConfig
-from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-
-from skillrewind.persistence.service.models import Base  # noqa: E402
+# This file ships inside the ``skillrewind`` package (see
+# ``skillrewind.persistence.service.migrations``) so it always runs with
+# skillrewind already importable -- no repository-relative sys.path hack
+# needed, whether invoked from an editable checkout or a pip-installed
+# wheel.
+from skillrewind.persistence.service.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

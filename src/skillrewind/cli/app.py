@@ -150,7 +150,7 @@ def _open_job_queue(args: argparse.Namespace):
     engine = build_engine(config.database_url)
     is_current, detail = schema_current(engine)
     if not is_current:
-        raise ServiceModeUnavailable(f"database schema is not current: {detail}. Run: make db-migrate")
+        raise ServiceModeUnavailable(f"database schema is not current: {detail}. Run: skillrewind db upgrade")
     return JobQueue(engine)
 
 
@@ -663,6 +663,54 @@ def _cmd_service_import(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_db_upgrade(args: argparse.Namespace) -> int:
+    """Apply Service-mode Alembic migrations from the migration scripts
+    packaged inside the installed ``skillrewind`` distribution -- never a
+    repository checkout. Requires the ``service`` extra."""
+
+    from ..config import load_config
+
+    config = load_config(overrides={"database_url": getattr(args, "database_url", None)})
+    if not config.database_url:
+        sys.stderr.write(
+            "skillrewind db upgrade: no database_url configured. Pass --database-url, set "
+            "SKILLREWIND_DATABASE_URL, or set database_url in skillrewind.toml.\n"
+        )
+        return 3
+    try:
+        from ..persistence.service.migrations_runtime import upgrade_to_head
+    except ModuleNotFoundError as exc:
+        sys.stderr.write(f"skillrewind db upgrade: service extra not installed ({exc}). Run: pip install 'skillrewind[service]'\n")
+        return 3
+    upgrade_to_head(config.database_url, revision=args.revision)
+    print(f"database schema at {config.database_url!r} upgraded to {args.revision}")
+    return 0
+
+
+def _cmd_db_current(args: argparse.Namespace) -> int:
+    """Report whether the configured database's schema is at Alembic head,
+    using only the migrations packaged inside the installed distribution."""
+
+    from ..config import load_config
+
+    config = load_config(overrides={"database_url": getattr(args, "database_url", None)})
+    if not config.database_url:
+        sys.stderr.write(
+            "skillrewind db current: no database_url configured. Pass --database-url, set "
+            "SKILLREWIND_DATABASE_URL, or set database_url in skillrewind.toml.\n"
+        )
+        return 3
+    try:
+        from ..persistence.service.engine import build_engine, schema_current
+    except ModuleNotFoundError as exc:
+        sys.stderr.write(f"skillrewind db current: service extra not installed ({exc}). Run: pip install 'skillrewind[service]'\n")
+        return 3
+    engine = build_engine(config.database_url)
+    is_current, detail = schema_current(engine)
+    print(detail)
+    return 0 if is_current else 1
+
+
 def _cmd_openapi_export(args: argparse.Namespace) -> int:
     """Exports the real, live FastAPI app's OpenAPI document (Phase C2.4
     section 7) -- never a hand-written stand-in. Requires the ``service``
@@ -869,6 +917,11 @@ def _build_parser() -> argparse.ArgumentParser:
     audit_export.set_defaults(func=_cmd_audit_export)
 
     add("resolve", _cmd_resolve, "Resolve a logical alias to its active artifact.", lambda p: p.add_argument("alias"))
+
+    add("db-upgrade", _cmd_db_upgrade, "Apply Service-mode Alembic migrations from the packaged migration scripts (no repo checkout needed).", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("--revision", default="head"),
+    ))
+    add("db-current", _cmd_db_current, "Report whether the configured database schema is at Alembic head.", lambda p: p.add_argument("--database-url"))
 
     add("service-import", _cmd_service_import, "Import a Lite-mode workspace's artifacts/recorded edges into Service mode.", lambda p: (
         p.add_argument("--database-url", required=True),

@@ -9,16 +9,11 @@ Used by ``skillrewind conformance self-test``.
 
 from __future__ import annotations
 
-import os
 import socket
-import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
-
-REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,11 +41,14 @@ class SelfTestReport:
 
 
 def _migrate(db_path: Path) -> None:
-    env = dict(os.environ)
-    env["SKILLREWIND_DATABASE_URL"] = f"sqlite:///{db_path}"
-    subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"], cwd=REPO_ROOT, env=env, check=True, capture_output=True
-    )
+    """Apply real Alembic migration history using the migration scripts
+    packaged inside ``skillrewind`` -- works from an installed wheel with
+    no repository checkout, unlike a ``python -m alembic`` subprocess that
+    depends on a repo-root ``alembic.ini``."""
+
+    from ..persistence.service.migrations_runtime import upgrade_to_head
+
+    upgrade_to_head(f"sqlite:///{db_path}")
 
 
 def _free_port() -> int:

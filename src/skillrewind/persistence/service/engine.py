@@ -53,8 +53,7 @@ def schema_current(engine: Engine) -> tuple[bool, str]:
     6.1 ("readiness failure when schema is behind").
     """
 
-    from alembic.config import Config
-    from alembic.script import ScriptDirectory
+    from .migrations_runtime import head_revision
 
     inspector = inspect(engine)
     if "alembic_version" not in inspector.get_table_names():
@@ -64,17 +63,8 @@ def schema_current(engine: Engine) -> tuple[bool, str]:
         row = conn.execute(text("SELECT version_num FROM alembic_version")).fetchone()
     current_rev = row[0] if row else None
 
-    cfg = Config()
-    cfg.set_main_option("script_location", str(_migrations_dir()))
-    script = ScriptDirectory.from_config(cfg)
-    head_rev = script.get_current_head()
+    head_rev = head_revision()
 
     if current_rev == head_rev:
         return True, f"schema at head ({head_rev})"
     return False, f"schema at {current_rev!r}, head is {head_rev!r} -- run migrations"
-
-
-def _migrations_dir():
-    from pathlib import Path
-
-    return Path(__file__).resolve().parents[3].parent / "migrations"

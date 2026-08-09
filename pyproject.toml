@@ -52,7 +52,13 @@ skillrewind = "skillrewind.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-skillrewind = ["py.typed"]
+skillrewind = [
+  "py.typed",
+  "persistence/service/migrations/README",
+  "persistence/service/migrations/env.py",
+  "persistence/service/migrations/script.py.mako",
+  "persistence/service/migrations/versions/*.py",
+]
 
 [tool.ruff]
 line-length = 120
