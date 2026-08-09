@@ -1,11 +1,12 @@
-"""SkillRewind CLI (v0.2).
+"""SkillRewind CLI (v0.2 + v0.3 Service-mode additions).
 
 Preserves the v0.1 ``closure``/``attest --edges`` recorded-only commands
 (see :mod:`skillrewind.cli.legacy`, invoked here as a fallback for those two
-subcommands) and adds the v0.2 workspace-backed command families. Commands
-not implemented in this session (``serve``, ``worker``, ``db upgrade``,
-``backup create/restore``) print a clear "not implemented" message rather
-than pretending to do something -- see ``STATUS.md``.
+subcommands) and adds the v0.2 workspace-backed command families. ``worker``
+and ``jobs`` are real (Phase B, backed by ``skillrewind.jobs``) when the
+``service`` extra is installed and ``database_url`` is configured; ``serve``
+(the HTTP API, Phase C) is not implemented yet and prints a clear "not
+implemented" message -- see ``STATUS.md``.
 """
 
 from __future__ import annotations
@@ -41,8 +42,7 @@ from ..verification.suites import DEFAULT_POISONED_DESCENDANT_SUITE, run_suite
 from ..workspace import Workspace
 
 NOT_IMPLEMENTED = {
-    "serve": "HTTP API service mode is not implemented in this session (see STATUS.md).",
-    "worker": "Durable job worker / service mode is not implemented in this session (see STATUS.md).",
+    "serve": "HTTP API service mode is not implemented yet (Phase C; see docs/completion-matrix-v0.3.md).",
 }
 
 
@@ -120,6 +120,170 @@ def _check_service_mode(config: Any) -> dict[str, Any]:
         return {"applicable": True, "schema_current": is_current, "reason": detail}
     except Exception as exc:  # never let a doctor check crash the process
         return {"applicable": True, "schema_current": False, "reason": f"connection failed: {exc}"}
+
+
+class ServiceModeUnavailable(Exception):
+    pass
+
+
+def _open_job_queue(args: argparse.Namespace):
+    """Build a JobQueue for the ``worker``/``jobs`` commands.
+
+    Requires the ``service`` extra and a migrated database at
+    ``database_url`` (from ``--database-url``, ``SKILLREWIND_DATABASE_URL``,
+    or ``skillrewind.toml``) -- refuses to silently create/mutate schema, per
+    master spec 6.1 ("No silent schema mutation in service mode").
+    """
+
+    from ..config import load_config
+
+    config = load_config(overrides={"database_url": getattr(args, "database_url", None)})
+    if not config.database_url:
+        raise ServiceModeUnavailable(
+            "no database_url configured. Pass --database-url, set SKILLREWIND_DATABASE_URL, "
+            "or set database_url in skillrewind.toml."
+        )
+    try:
+        from ..jobs.queue import JobQueue
+        from ..persistence.service.engine import build_engine, schema_current
+    except ModuleNotFoundError as exc:
+        raise ServiceModeUnavailable(
+            f"service extra not installed ({exc}). Run: pip install 'skillrewind[service]'"
+        ) from exc
+
+    engine = build_engine(config.database_url)
+    is_current, detail = schema_current(engine)
+    if not is_current:
+        raise ServiceModeUnavailable(f"database schema is not current: {detail}. Run: make db-migrate")
+    return JobQueue(engine)
+
+
+def _cmd_worker_run(args: argparse.Namespace) -> int:
+    from ..jobs.worker import Worker
+
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind worker run: {exc}\n")
+        return 3
+    kinds = args.kinds.split(",") if args.kinds else None
+    worker = Worker(queue, kinds=kinds, lease_seconds=args.lease_seconds)
+    print(f"worker {worker.worker_id} starting (kinds={kinds or 'all'}, multi_worker_safe={queue.is_multi_worker_safe})")
+    processed = worker.run(poll_interval=args.poll_interval, max_iterations=args.max_iterations)
+    print(f"worker {worker.worker_id} stopped after processing {processed} job(s)")
+    return 0
+
+
+def _cmd_worker_once(args: argparse.Namespace) -> int:
+    from ..jobs.worker import Worker
+
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind worker once: {exc}\n")
+        return 3
+    kinds = args.kinds.split(",") if args.kinds else None
+    worker = Worker(queue, kinds=kinds, lease_seconds=args.lease_seconds)
+    did_work = worker.run_once()
+    _write_json({"processed": did_work}, args.output)
+    return 0
+
+
+def _cmd_jobs_list(args: argparse.Namespace) -> int:
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs list: {exc}\n")
+        return 3
+    jobs = queue.list_jobs(status=args.status, kind=args.kind, limit=args.limit)
+    _write_json(jobs, args.output)
+    return 0
+
+
+def _cmd_jobs_show(args: argparse.Namespace) -> int:
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs show: {exc}\n")
+        return 3
+    job = queue.get(args.job_id)
+    if job is None:
+        sys.stderr.write(f"job not found: {args.job_id}\n")
+        return 1
+    job["events"] = queue.events(args.job_id)
+    _write_json(job, args.output)
+    return 0
+
+
+def _cmd_jobs_cancel(args: argparse.Namespace) -> int:
+    from ..jobs.queue import InvalidJobStateError, JobNotFoundError
+
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs cancel: {exc}\n")
+        return 3
+    try:
+        queue.request_cancellation(args.job_id)
+    except (JobNotFoundError, InvalidJobStateError) as exc:
+        sys.stderr.write(f"skillrewind jobs cancel: {exc}\n")
+        return 1
+    _write_json({"job_id": args.job_id, "cancellation_requested": True}, args.output)
+    return 0
+
+
+def _cmd_jobs_retry(args: argparse.Namespace) -> int:
+    from sqlalchemy.orm import Session
+
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs retry: {exc}\n")
+        return 3
+    from ..persistence.service.models import Job
+
+    with Session(queue.engine) as session:
+        job = session.get(Job, args.job_id)
+        if job is None:
+            sys.stderr.write(f"job not found: {args.job_id}\n")
+            return 1
+        if job.status not in {"failed", "cancelled"}:
+            sys.stderr.write(f"job {args.job_id} is not in a retryable status ({job.status})\n")
+            return 1
+        job.status = "queued"
+        job.attempt_count = 0
+        job.error_code = None
+        job.sanitized_error = None
+        job.cancellation_requested_at = None
+        job.scheduled_at = None
+        session.commit()
+    _write_json({"job_id": args.job_id, "status": "queued"}, args.output)
+    return 0
+
+
+def _cmd_jobs_reap_expired(args: argparse.Namespace) -> int:
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs reap-expired: {exc}\n")
+        return 3
+    reaped = queue.reap_expired_leases()
+    _write_json({"reaped": reaped}, args.output)
+    return 0
+
+
+def _cmd_jobs_enqueue(args: argparse.Namespace) -> int:
+    try:
+        queue = _open_job_queue(args)
+    except ServiceModeUnavailable as exc:
+        sys.stderr.write(f"skillrewind jobs enqueue: {exc}\n")
+        return 3
+    payload = json.loads(args.payload_json) if args.payload_json else {}
+    job_id = queue.enqueue(
+        args.kind, payload, idempotency_key=args.idempotency_key, priority=args.priority
+    )
+    _write_json({"job_id": job_id}, args.output)
+    return 0
 
 
 def _cmd_artifact_ingest(args: argparse.Namespace) -> int:
@@ -497,8 +661,41 @@ def _build_parser() -> argparse.ArgumentParser:
 
     add("init", _cmd_init, "Initialize a SkillRewind workspace.")
     add("doctor", _cmd_doctor, "Validate configuration, storage, and audit chain health.")
-    for name in ("serve", "worker"):
-        add(name, _cmd_not_implemented(name), f"({name} is not implemented in this session)")
+    add("serve", _cmd_not_implemented("serve"), "(serve is not implemented yet -- Phase C)")
+
+    def _worker_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--database-url", help="Overrides SKILLREWIND_DATABASE_URL / skillrewind.toml.")
+        p.add_argument("--kinds", help="Comma-separated job kinds to claim; default is all registered kinds.")
+        p.add_argument("--lease-seconds", type=int, default=60)
+
+    def _worker_run_args(p: argparse.ArgumentParser) -> None:
+        _worker_args(p)
+        p.add_argument("--poll-interval", type=float, default=1.0)
+        p.add_argument("--max-iterations", type=int, default=None)
+
+    add("worker-run", _cmd_worker_run, "Run the durable job worker loop.", _worker_run_args)
+    add("worker-once", _cmd_worker_once, "Claim and process at most one job, then exit.", _worker_args)
+
+    add("jobs-list", _cmd_jobs_list, "List jobs.", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("--status"), p.add_argument("--kind"),
+        p.add_argument("--limit", type=int, default=50),
+    ))
+    add("jobs-show", _cmd_jobs_show, "Show one job, including its persisted event stream.", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("job_id"),
+    ))
+    add("jobs-cancel", _cmd_jobs_cancel, "Request cancellation of a job.", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("job_id"),
+    ))
+    add("jobs-retry", _cmd_jobs_retry, "Requeue a failed or cancelled job.", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("job_id"),
+    ))
+    add("jobs-reap-expired", _cmd_jobs_reap_expired, "Requeue jobs whose lease expired without a heartbeat.",
+        lambda p: p.add_argument("--database-url"))
+    add("jobs-enqueue", _cmd_jobs_enqueue, "Enqueue a job (operator/testing use).", lambda p: (
+        p.add_argument("--database-url"), p.add_argument("--kind", required=True),
+        p.add_argument("--payload-json", default="{}"), p.add_argument("--idempotency-key"),
+        p.add_argument("--priority", type=int, default=0),
+    ))
 
     add("artifact-ingest", _cmd_artifact_ingest, "Ingest raw bytes as an immutable artifact.", lambda p: (
         p.add_argument("--file", required=True), p.add_argument("--kind", required=True),

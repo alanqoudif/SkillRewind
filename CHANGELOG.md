@@ -11,6 +11,9 @@ All notable changes to this project are documented here. Format loosely follows 
 - `make db-migrate` / `make db-current` targets; `service` optional dependency group (`sqlalchemy`, `alembic`, `psycopg[binary]`).
 - `docs/adr/0009-service-mode-persistence.md`.
 - 10 new tests (`tests/integration/test_service_persistence.py`, `tests/integration/test_doctor_service_mode.py`); 1 test skips honestly pending a reachable PostgreSQL instance.
+- `skillrewind.jobs`: durable database-backed job queue (enqueue/claim/lease/heartbeat/retry-backoff/cancellation/lease-expiry-recovery/persisted progress events), `Worker` loop, and `worker-run`/`worker-once`/`jobs-list`/`jobs-show`/`jobs-cancel`/`jobs-retry`/`jobs-reap-expired`/`jobs-enqueue` CLI commands. One real handler (`benchmark.run`) wraps the existing RewindBench CLI pipeline and is proven idempotent under simulated worker crash/restart.
+- `docs/adr/0010-job-handler-scope.md` documents why revocation/replay/rebuild/verification/attestation handlers are not wired yet.
+- 27 new tests (`tests/unit/test_jobs.py`, `tests/integration/test_benchmark_job_handler.py`).
 
 ## [0.2.0] — Research Preview
 

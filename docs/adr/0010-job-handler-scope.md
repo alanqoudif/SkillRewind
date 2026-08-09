@@ -1,0 +1,21 @@
+# ADR 0010: Only `benchmark.run` is wired as a real job handler in this increment
+
+## Status
+Accepted (v0.3.0-in-progress)
+
+## Context
+Master spec section 7.4 lists required job handlers: candidate recovery, paired replay batch, revocation progression, clean-room rebuild, verification, attestation generation, RewindBench generation/run/score/report, and optional large skill import/export. Section 7.4 also requires: "A handler must call existing domain services, not duplicate their logic," and section 18.1 requires "job handler idempotent" and "revocation job resumes without duplicating quarantine, rebuild, alias update, or attestation" as a tested invariant.
+
+`skillrewind.revocation.service.run_revocation` (the existing, tested, synchronous entry point) is a single long-running function that walks a `RevocationEvent` through candidate recovery, replay selection, quarantine, rebuild, and verification in one call, mutating and persisting `event` incrementally along the way (`workspace.revocations.update(event)` at several points). If a job worker crashed partway through and a handler simply re-invoked `run_revocation` on the same (partially-updated) event fetched fresh from the database, list fields such as `event.quarantined` and `event.replay_decisions` would be appended to a second time rather than recomputed from scratch, because the function does not distinguish "resuming a partially-completed event" from "starting fresh" -- it always begins its `hidden_candidates`/`replay_decisions` computation anew but appends onto whatever quarantine/rebuild state is already attached to the fetched event object.
+
+Wrapping `run_revocation` in a job handler today, without changing `run_revocation` itself, would make the resumability requirement in section 18.1 either (a) untested and quietly false, or (b) true only by accident for a narrow set of crash points. Neither is acceptable under this project's "no fabricated results" / "no core-path placeholders" rules. Making `run_revocation` genuinely checkpoint-resumable is real, valuable work, but it is a change to the frozen, 86-test-covered v0.2 revocation state machine -- exactly the kind of change ADR-0009 already flagged as too risky to make without a dedicated pass and its own test suite.
+
+## Decision
+This increment wires exactly one handler through the real job queue: `benchmark.run` (`skillrewind.jobs.handlers.run_benchmark_job`), which wraps the existing `skillrewind.bench.cli` module (the same code path `make bench-smoke` already exercises) as an allowlisted subprocess call. It is genuinely idempotent: if the job's `run/summary.json` already exists, a resumed/retried job returns immediately rather than recomputing, which is tested directly (`tests/unit/test_jobs.py::test_worker_crash_and_restart_does_not_duplicate_benchmark_run`).
+
+Revocation, replay, rebuild, verification, and attestation handlers are **not implemented** in this increment. Calling `skillrewind jobs list`/`worker run` with a `revocation.progress`-shaped payload will fail with `unknown_kind` rather than silently no-op or fake success.
+
+## Consequences
+- The durable-jobs infrastructure itself (enqueue, claim, lease, heartbeat, retry/backoff, cancellation, lease-expiry recovery, persisted progress events) is real, generic, and fully tested against both the handler registry and the queue directly -- it does not depend on which handlers exist.
+- Wiring `revocation.progress` (and the other domain handlers) through the queue safely is tracked as a follow-up: it requires first making `run_revocation` (and `rebuild_artifact`, `run_paired_replay`, etc.) resumable from a persisted checkpoint, not just retryable from the start. See `docs/completion-matrix-v0.3.md`.
+- `skillrewind doctor`'s Service-mode check and the `jobs`/`worker` CLI commands report which kinds are actually registered (`skillrewind.jobs.registered_kinds()`) so this gap is visible at runtime, not just in documentation.

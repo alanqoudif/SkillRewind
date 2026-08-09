@@ -42,8 +42,15 @@ Legend: `complete` / `partial` / `missing` / `blocked-by-environment` / `intenti
 ### Durable jobs / worker (Phase B)
 | Requirement | Status | Evidence |
 |---|---|---|
-| Job queue, lease, retry, cancellation | missing | `serve`/`worker` CLI commands are explicit stubs (ADR-0004) |
-| All domain work synchronous in-process | complete (by design) | every service module (`revocation/service.py`, `rebuild/service.py`, etc.) runs synchronously |
+| Job queue: enqueue/claim/lease/heartbeat/retry-backoff/cancel/lease-expiry-recovery | complete | `src/skillrewind/jobs/queue.py`; 24 tests in `tests/unit/test_jobs.py` with a deterministic `FakeClock`, incl. simulated worker crash + lease recovery |
+| Worker loop (`run_once`/`run`), handler registry | complete | `src/skillrewind/jobs/worker.py` |
+| `worker-run`/`worker-once`/`jobs-*` CLI commands | complete | `skillrewind worker-run\|worker-once\|jobs-list\|jobs-show\|jobs-cancel\|jobs-retry\|jobs-reap-expired\|jobs-enqueue`; refuses to run against an unmigrated schema (`ServiceModeUnavailable`) rather than silently mutating it |
+| PostgreSQL `FOR UPDATE SKIP LOCKED` claiming | complete (code), not exercised live | `JobQueue.claim` uses it when `engine.dialect.name == "postgresql"`; no live PostgreSQL server reachable in this environment to prove two-worker exclusivity end-to-end (same constraint as Phase A) |
+| SQLite explicitly not claiming multi-worker safety | complete | `JobQueue.is_multi_worker_safe` reports `False` on SQLite; tested |
+| Persisted progress events (for future SSE) | complete | `job_events` table, strictly increasing `event_id`; tested ordering |
+| Secret redaction in job errors/events | complete | reuses `skillrewind.capture.redaction.Redactor`; tested |
+| Real handler: `benchmark.run` | complete | `src/skillrewind/jobs/handlers.py`, wraps the existing tested `skillrewind.bench.cli` pipeline; idempotent-resume tested end to end |
+| Handlers for candidate recovery / replay / revocation / rebuild / verification / attestation | missing (deliberate, documented) | `docs/adr/0010-job-handler-scope.md`: `run_revocation` is not currently checkpoint-resumable, so wrapping it today would make the "resumes without duplicating quarantine/rebuild/attestation" test requirement false; scoped out rather than faked |
 
 ### API (Phase C)
 | Requirement | Status | Evidence |
