@@ -49,8 +49,23 @@ jobs:
         with:
           enable-cache: true
 
+      # --locked (not --frozen) fails the build if uv.lock is out of date,
+      # and --all-extras installs the `service` group -- specifically
+      # psycopg[binary], sqlalchemy, and alembic, which the
+      # SKILLREWIND_TEST_POSTGRES_URL-gated tests below require just to be
+      # importable, let alone to run for real instead of skipping.
       - name: Sync dependencies
-        run: uv sync --frozen
+        run: uv sync --locked --all-extras
 
       - name: Run PostgreSQL integration tests
-        run: uv run pytest -q
+        run: uv run pytest -q -rs
+
+      - name: Fail if the PostgreSQL-gated tests were skipped
+        run: |
+          uv run pytest tests/integration/test_service_persistence.py::test_postgres_migration_and_schema_current \
+            tests/integration/test_service_replay_job_handler.py -k postgres \
+            -v -rs --no-header | tee /tmp/postgres-gated.log
+          if grep -q "SKIPPED" /tmp/postgres-gated.log; then
+            echo "::error::PostgreSQL-gated test(s) were skipped in CI, where SKILLREWIND_TEST_POSTGRES_URL is configured and psycopg is installed. This must never skip in this workflow -- see .github/workflows/postgres.yml."
+            exit 1
+          fi
