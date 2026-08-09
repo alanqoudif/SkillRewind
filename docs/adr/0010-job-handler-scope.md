@@ -15,6 +15,11 @@ This increment wires exactly one handler through the real job queue: `benchmark.
 
 Revocation, replay, rebuild, verification, and attestation handlers are **not implemented** in this increment. Calling `skillrewind jobs list`/`worker run` with a `revocation.progress`-shaped payload will fail with `unknown_kind` rather than silently no-op or fake success.
 
+## Update (2026-08-09, Phase C2)
+The follow-up described below has been done. `run_revocation` was made checkpoint-resumable in place: `state_machine.transition()` no-ops when re-entering the current state instead of raising; a new `_advance()` helper in `revocation/service.py` skips stages the event has already passed on a resumed call; the replay-decision, quarantine, and rebuild/verify loops now persist the event after each item and skip items already recorded on it; and a call on an already-terminal event returns immediately. `revocation.execute` is now a registered job handler (`skillrewind.jobs.handlers.run_revocation_job`). See `tests/integration/test_revocation_resumability.py` and `tests/integration/test_revocation_job_handler.py` for the crash/resume and naive-retry proofs, and the updated row in `docs/completion-matrix-v0.3.md`.
+
+This did not require a rewrite of the state machine's transition table (ADR-0009's risk concern) -- only making transitions idempotent and adding skip-if-already-done guards around the existing per-target loops. `replay.execute`, `rebuild.execute`, `verification.execute`, and `attestation.build`/`sign` as *independently* enqueueable job kinds remain unimplemented; today they only run as internal steps of `revocation.execute`.
+
 ## Consequences
 - The durable-jobs infrastructure itself (enqueue, claim, lease, heartbeat, retry/backoff, cancellation, lease-expiry recovery, persisted progress events) is real, generic, and fully tested against both the handler registry and the queue directly -- it does not depend on which handlers exist.
 - Wiring `revocation.progress` (and the other domain handlers) through the queue safely is tracked as a follow-up: it requires first making `run_revocation` (and `rebuild_artifact`, `run_paired_replay`, etc.) resumable from a persisted checkpoint, not just retryable from the start. See `docs/completion-matrix-v0.3.md`.

@@ -2,15 +2,13 @@
 than reimplementing domain logic (master spec 7.4: "A handler must call
 existing domain services, not duplicate their logic").
 
-Only `benchmark.run` is implemented in this phase. Wiring revocation/replay/
-rebuild/verification/attestation progression through the job queue safely
-(so a crash mid-run resumes without duplicating quarantine entries, rebuild
-attempts, or attestations) requires those services to expose resumable
-checkpoints they do not currently have -- see
-`docs/completion-matrix-v0.3.md` and `docs/adr/0010-job-handler-scope.md`.
-Forcing that resumability in through the job layer without touching the
-underlying service was assessed as unsafe for this increment and deferred
-rather than shipped as a handler that only looks idempotent.
+`revocation.execute` wraps `skillrewind.revocation.service.run_revocation`,
+which was made checkpoint-resumable specifically so it is safe to run through
+this job layer (see `docs/adr/0010-job-handler-scope.md` for the gap this
+closes, and `tests/integration/test_revocation_resumability.py` for the
+crash/resume proof at the service layer). A crash between job attempts
+resumes from the event's persisted state rather than restarting or
+duplicating quarantine/rebuild/audit side effects.
 """
 
 from __future__ import annotations
@@ -20,6 +18,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ..domain.errors import NotFoundError
+from ..revocation.service import run_revocation
+from ..workspace import Workspace
 from .errors import PermanentJobError, RetryableJobError
 from .worker import JobContext, register_handler
 
@@ -86,3 +87,34 @@ def run_benchmark_job(ctx: JobContext) -> str:
 
 def parse_summary(result_reference: str) -> dict:
     return json.loads(Path(result_reference).read_text(encoding="utf-8"))
+
+
+@register_handler("revocation.execute")
+def run_revocation_job(ctx: JobContext) -> str:
+    """Runs (or resumes) a revocation event to completion via the real,
+    checkpoint-resumable `run_revocation` service call against a Lite-mode
+    workspace on disk. Never duplicates quarantine/rebuild/attestation
+    side effects across a crash-and-retry: `run_revocation` itself refuses to
+    redo work already recorded on the persisted event, and a call on an
+    already-terminal event is a complete no-op.
+    """
+
+    workspace_dir = ctx.payload.get("workspace_dir")
+    event_id = ctx.payload.get("event_id")
+    if not workspace_dir or not event_id:
+        raise PermanentJobError("revocation.execute requires 'workspace_dir' and 'event_id'")
+
+    ctx.check_cancelled()
+    ws = Workspace.open(workspace_dir)
+    try:
+        try:
+            event = ws.revocations.get(event_id)
+        except NotFoundError as exc:
+            raise PermanentJobError(f"unknown revocation event_id {event_id!r}: {exc}") from exc
+
+        ctx.heartbeat(current=0, total=1, message=f"resuming revocation {event_id} from state={event.state.value}")
+        result = run_revocation(ws, event)
+        ctx.heartbeat(current=1, total=1, message=f"revocation {event_id} finished in state={result.state.value}")
+        return f"{event_id}:{result.state.value}"
+    finally:
+        ws.close()

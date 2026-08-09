@@ -76,6 +76,43 @@ class RevocationRunResult:
     event: RevocationEvent
 
 
+#: Linear ordering of the non-terminal stages `run_revocation` walks through.
+#: Used only to decide, on a resumed/retried call, whether a stage has
+#: already been passed -- never to bypass the state machine's own validity
+#: checks in `transition()`.
+_STAGE_ORDER = [
+    RevocationState.REQUESTED,
+    RevocationState.BARRIER_APPLIED,
+    RevocationState.CANDIDATE_RECOVERY,
+    RevocationState.REPLAY_SELECTION,
+    RevocationState.REPLAYING,
+    RevocationState.QUARANTINE_APPLIED,
+    RevocationState.REBUILD_PLANNING,
+    RevocationState.REBUILDING,
+    RevocationState.VERIFYING,
+]
+
+_TERMINAL_STATES = (
+    RevocationState.COMPLETED,
+    RevocationState.COMPLETED_WITH_UNRESOLVED,
+    RevocationState.FAILED,
+    RevocationState.CANCELLED_BEFORE_BARRIER,
+)
+
+
+def _advance(workspace: Workspace, event: RevocationEvent, to_state: RevocationState) -> RevocationEvent:
+    """Transition to `to_state` unless the event has already reached or passed
+    it (a resumed call re-walking the same code path from the top)."""
+
+    if event.state in _TERMINAL_STATES:
+        return event
+    current_index = _STAGE_ORDER.index(event.state) if event.state in _STAGE_ORDER else -1
+    target_index = _STAGE_ORDER.index(to_state) if to_state in _STAGE_ORDER else len(_STAGE_ORDER)
+    if current_index >= target_index and event.state != to_state:
+        return event
+    return transition(workspace.revocations, event, to_state)
+
+
 def run_revocation(
     workspace: Workspace,
     event: RevocationEvent,
@@ -86,7 +123,21 @@ def run_revocation(
     verification_suite: Optional[VerificationSuite] = None,
     attempt_rebuild: bool = True,
 ) -> RevocationEvent:
+    """Runs (or resumes) a revocation event through its full pipeline.
+
+    Resumable by construction: a crash or worker restart mid-run and a
+    subsequent call with the same, freshly-refetched `event` re-derives the
+    deterministic parts (recorded closure, candidate recovery, replay
+    selection) idempotently, and skips any per-target quarantine/rebuild work
+    already recorded on the persisted event rather than repeating it -- so no
+    duplicate quarantine entries, rebuild attempts, or audit events are
+    produced. A call on an already-terminal event is a complete no-op.
+    """
+
     config = config or workspace.config
+
+    if event.state in _TERMINAL_STATES:
+        return event
 
     event.recorded_closure = list(recorded_descendants(workspace, event.roots, include_roots=True))
 
@@ -111,7 +162,7 @@ def run_revocation(
                 )
     event.candidates = hidden_candidates
     workspace.revocations.update(event)
-    event = transition(workspace.revocations, event, RevocationState.REPLAY_SELECTION)
+    event = _advance(workspace, event, RevocationState.REPLAY_SELECTION)
 
     # --- budget-aware replay selection
     budget = Budget(max_replay_calls=max_replay_calls or event.budget.get("replay_calls") or config.default_replay_budget_calls)
@@ -122,72 +173,100 @@ def run_revocation(
     selector = select_exhaustive if replay_selection == "exhaustive" else select_active
     selection = selector(replay_pool, budget=budget)
 
-    event = transition(workspace.revocations, event, RevocationState.REPLAYING)
-    replay_decisions: list[dict] = []
-    confirmed_targets: set[str] = set()
-    unresolved_targets: list[dict] = []
+    # Replay decisions are only ever *computed* while still in REPLAYING (or
+    # arriving at it for the first time); once the event has moved on to
+    # QUARANTINE_APPLIED or beyond, `event.replay_decisions` as persisted is
+    # authoritative and must not be recomputed -- re-invoking `run_paired_replay`
+    # on a resumed call would create duplicate replay records for candidates
+    # already decided.
+    replaying_not_yet_done = event.state not in _STAGE_ORDER or _STAGE_ORDER.index(event.state) <= _STAGE_ORDER.index(
+        RevocationState.REPLAYING
+    )
+    event = _advance(workspace, event, RevocationState.REPLAYING)
 
-    selected_pairs = {s for s in selection.selected}
-    for candidate in hidden_candidates:
-        pair_key = f"{candidate['root_or_closure_member']}=>{candidate['target']}"
-        if pair_key not in selected_pairs:
-            replay_decisions.append({**candidate, "replay": "skipped", "reason": "not-selected-within-budget"})
-            continue
-        derivation = workspace.derivations.find_by_target(candidate["target"])
-        if derivation is None:
-            replay_decisions.append({**candidate, "replay": "skipped", "reason": "no-derivation-recorded"})
-            continue
-        outcome = run_paired_replay(
-            workspace, candidate["root_or_closure_member"], derivation.derivation_id, config=config
-        )
-        replay_decisions.append(
-            {**candidate, "replay": "executed", "replay_id": outcome.replay_id, "verdict": outcome.verdict.value}
-        )
-        if outcome.verdict.value == "confirmed":
-            confirmed_targets.add(candidate["target"])
-        elif outcome.verdict.value != "rejected":
-            unresolved_targets.append({**candidate, "verdict": outcome.verdict.value})
+    if replaying_not_yet_done:
+        replay_decisions = list(event.replay_decisions)
+        already_decided_pairs = {f"{d['root_or_closure_member']}=>{d['target']}" for d in replay_decisions}
+        selected_pairs = {s for s in selection.selected}
+        for candidate in hidden_candidates:
+            pair_key = f"{candidate['root_or_closure_member']}=>{candidate['target']}"
+            if pair_key in already_decided_pairs:
+                continue  # already decided in a prior (crashed/resumed) attempt
+            if pair_key not in selected_pairs:
+                replay_decisions.append({**candidate, "replay": "skipped", "reason": "not-selected-within-budget"})
+            else:
+                derivation = workspace.derivations.find_by_target(candidate["target"])
+                if derivation is None:
+                    replay_decisions.append({**candidate, "replay": "skipped", "reason": "no-derivation-recorded"})
+                else:
+                    outcome = run_paired_replay(
+                        workspace, candidate["root_or_closure_member"], derivation.derivation_id, config=config
+                    )
+                    replay_decisions.append(
+                        {**candidate, "replay": "executed", "replay_id": outcome.replay_id, "verdict": outcome.verdict.value}
+                    )
+            # persist after every single decision so a crash mid-loop never
+            # re-executes a replay that already ran.
+            event.replay_decisions = replay_decisions
+            workspace.revocations.update(event)
+        event.replay_decisions = replay_decisions
+        workspace.revocations.update(event)
 
-    event.replay_decisions = replay_decisions
-    workspace.revocations.update(event)
+    confirmed_targets = {d["target"] for d in event.replay_decisions if d.get("verdict") == "confirmed"}
+    unresolved_targets = [
+        d for d in event.replay_decisions if d.get("replay") == "executed" and d.get("verdict") not in ("confirmed", "rejected")
+    ]
 
     # --- quarantine. Forensic mode makes no serving-state changes: confirmed
     # findings are reported but never actually quarantined.
-    event = transition(workspace.revocations, event, RevocationState.QUARANTINE_APPLIED)
+    event = _advance(workspace, event, RevocationState.QUARANTINE_APPLIED)
     is_forensic = event.policy == RevocationPolicy.FORENSIC
+    already_unresolved_targets = {u.get("target") for u in event.unresolved}
     for target in sorted(confirmed_targets):
+        if target in event.quarantined:
+            continue  # already quarantined in a prior attempt
         if not is_forensic:
             quarantine_artifact(workspace, target, revocation_event_id=event.event_id, reason="replay-confirmed hidden descendant")
         event.quarantined.append(target)
+        workspace.revocations.update(event)
     for candidate in unresolved_targets:
+        target = candidate["target"]
+        if target in event.quarantined or target in already_unresolved_targets:
+            continue  # already resolved (either way) in a prior attempt
         if not is_forensic and should_quarantine_unresolved(policy=event.policy, severity=event.severity, config=config):
             quarantine_artifact(
-                workspace, candidate["target"], revocation_event_id=event.event_id,
+                workspace, target, revocation_event_id=event.event_id,
                 reason=f"policy-quarantined unresolved high-severity candidate ({candidate['verdict']})",
             )
-            if candidate["target"] not in event.quarantined:
-                event.quarantined.append(candidate["target"])
+            event.quarantined.append(target)
         else:
             event.unresolved.append(candidate)
-    workspace.revocations.update(event)
+            already_unresolved_targets.add(target)
+        workspace.revocations.update(event)
 
     # --- rebuild + verify quarantined artifacts (best-effort; artifacts
     # without a registered clean-room recipe remain quarantined+unresolved).
     # Never attempted in forensic mode, which makes no serving-state changes.
     if attempt_rebuild and not is_forensic and event.quarantined:
         suite = verification_suite or VerificationSuite(suite_id="default", version="0.1.0")
-        event = transition(workspace.revocations, event, RevocationState.REBUILD_PLANNING)
-        event = transition(workspace.revocations, event, RevocationState.REBUILDING)
-        reached_verifying = False
+        event = _advance(workspace, event, RevocationState.REBUILD_PLANNING)
+        event = _advance(workspace, event, RevocationState.REBUILDING)
+        already_rebuilt = {r["original"] for r in event.rebuilt}
+        already_unresolved_targets = {u.get("target") for u in event.unresolved}
+        reached_verifying = event.state not in (RevocationState.REBUILD_PLANNING, RevocationState.REBUILDING)
         for artifact_id in list(event.quarantined):
+            if artifact_id in already_rebuilt or artifact_id in already_unresolved_targets:
+                continue  # already rebuilt-and-verified (or given up on) in a prior attempt
             try:
                 rebuild_result = rebuild_artifact(workspace, artifact_id, revocation_event_id=event.event_id)
             except (NotFoundError, KeyError) as exc:
                 event.unresolved.append({"target": artifact_id, "reason": f"rebuild-unavailable: {exc}"})
+                already_unresolved_targets.add(artifact_id)
+                workspace.revocations.update(event)
                 continue
 
             if not reached_verifying:
-                event = transition(workspace.revocations, event, RevocationState.VERIFYING)
+                event = _advance(workspace, event, RevocationState.VERIFYING)
                 reached_verifying = True
             report = run_suite(
                 workspace, rebuild_result.new_artifact.artifact_id, suite, fixture_output=rebuild_result.fixture_output
@@ -197,13 +276,16 @@ def run_revocation(
                 event.rebuilt.append(
                     {"original": artifact_id, "successor": rebuild_result.new_artifact.artifact_id, "verification": report.to_dict()}
                 )
+                already_rebuilt.add(artifact_id)
             else:
                 event.unresolved.append(
                     {"target": artifact_id, "reason": "verification-failed", "verification": report.to_dict()}
                 )
+                already_unresolved_targets.add(artifact_id)
+            workspace.revocations.update(event)
         if event.state == RevocationState.REBUILDING:
             # every rebuild attempt failed before producing a candidate to verify
-            event = transition(workspace.revocations, event, RevocationState.VERIFYING)
+            event = _advance(workspace, event, RevocationState.VERIFYING)
         workspace.revocations.update(event)
 
     unresolved_high_severity = [
