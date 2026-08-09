@@ -1,0 +1,56 @@
+name: PostgreSQL Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: skillrewind
+          POSTGRES_PASSWORD: skillrewind_test
+          POSTGRES_DB: skillrewind_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U skillrewind -d skillrewind_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SKILLREWIND_TEST_POSTGRES_URL: >-
+        postgresql+psycopg://skillrewind:skillrewind_test@localhost:5432/skillrewind_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run PostgreSQL integration tests
+        run: uv run pytest -q
